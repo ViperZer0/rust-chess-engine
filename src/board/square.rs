@@ -25,6 +25,7 @@ impl Square {
     /// # Examples
     ///
     /// ```
+    /// # use rust_chess_engine::board::Square;
     /// // Represents the square a1.
     /// let square = Square::new(0,0);
     /// // Represents the square b3.

@@ -154,7 +154,7 @@ mod tests
     #[test]
     fn test_rank_to_numeric_zero_fails()
     {
-        assert_eq!(RankToNumericError::InvalidCoordinate, rank_to_numeric("0").unwrap_err());
+        assert_eq!(NotationParseError::ZeroRankIndex, rank_to_numeric("0").unwrap_err());
     }
 
     #[test]
@@ -162,8 +162,8 @@ mod tests
     {
         let result = rank_to_numeric("ajshdkfljhasld81u2943hasijdfh8&AEWYOUI4o128971y4*").unwrap_err();
         match result {
-            RankToNumericError::ParseIntError(_) => assert!(true),
-            RankToNumericError::InvalidCoordinate => panic!("Expected ParseIntError, got InvalidCoordinate error"),
+            NotationParseError::ParseIntError(_) => assert!(true),
+            other => panic!("Expected ParseIntError, got {:?}", other),
         }
     }
 }
