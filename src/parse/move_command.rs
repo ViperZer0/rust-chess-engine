@@ -2,8 +2,6 @@
 
 use std::str::FromStr;
 
-use crate::{line::Line, piece_type::PieceType, square::Square};
-
 /// Represents a parsed move from algebraic notation
 ///
 /// This type guarantees that the contained move is sound (in this case that means the given
