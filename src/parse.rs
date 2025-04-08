@@ -3,6 +3,7 @@
 mod move_command;
 mod coordinates;
 mod error;
+mod parse_piece_type;
 
 // Re-exports
 pub use move_command::MoveCommand;

@@ -1,44 +1,12 @@
 //! This module handles converting between coordinates in algebraic notation (i.e a3, c6, h1) and
 //! their tuple/numerical representations.
 
-use std::fmt::Display;
-
 use log::{debug, error, trace};
 use regex::Regex;
 
+use crate::{board::Square, UInt};
+
 use super::error::NotationParseError;
-
-/// The type returned by [algebraic_to_tuple], containing the two-part conversion of the alphabetic
-/// part of the string into the file and the numeric part of the string into the rank.
-/// Either conversion can fail for different reasons, but the other part *can* still be intact and
-/// worth parsing.
-#[derive(Debug, PartialEq)]
-pub struct Coordinate 
-{
-    /// The result of parsing the numerical part of the string. Is [Ok] if the parse succeeded,
-    /// otherwise is an error of type [NotationParseError]
-    pub rank: Result<u32, NotationParseError>,
-    /// The result of parsing the alphabetical part of the string. Is [Ok] if the parse succeeded,
-    /// otherwise is an error of type [NotationParseError]
-    pub file: Result<u32, NotationParseError>,
-}
-
-impl Display for Coordinate
-{
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let rank = match &self.rank {
-            Ok(i) => i as &dyn Display,
-            Err(e) => e as &dyn Display,
-        };
-
-        let file = match &self.file {
-            Ok(i) => i as &dyn Display,
-            Err(e) => e as &dyn Display,
-        };
-
-        write!(f, "(\n\t{}\n\t{}\n)", rank, file)
-    }
-}
 
 /// Converts an algebraic notated string (such as "a5", "c8", etc)
 /// into a tuple of the form 
@@ -63,7 +31,7 @@ impl Display for Coordinate
 ///
 /// Note that algebraic notation is 1-based, but the tuple notation is 0-based.
 /// Thus a = 0 for files, and the first rank (or rank 1) is rank 0.
-pub fn algebraic_to_tuple(algebraic_notated_string: &str) -> Result<Coordinate, NotationParseError>
+pub fn algebraic_to_tuple(algebraic_notated_string: &str) -> Result<Square, NotationParseError>
 {
     let re = Regex::new(r"([a-zA-Z]+)([0-9]+)").unwrap();
     let captures = re.captures(algebraic_notated_string);
@@ -75,14 +43,10 @@ pub fn algebraic_to_tuple(algebraic_notated_string: &str) -> Result<Coordinate, 
     let captures = captures.unwrap();
     let file_str = captures.get(1).unwrap().as_str();
     let rank_str = captures.get(2).unwrap().as_str();
-    let file = alphabetic_file_to_numeric(file_str);
-    let rank = rank_to_numeric(rank_str);
+    let file = alphabetic_file_to_numeric(file_str)?;
+    let rank = rank_to_numeric(rank_str)?;
 
-    Ok(Coordinate 
-    {
-        rank,
-        file
-    })
+    Ok(Square::new(rank, file))
 }
 
 /// Converts an alphabetical string into its numeric representation as if 
@@ -112,12 +76,12 @@ pub fn algebraic_to_tuple(algebraic_notated_string: &str) -> Result<Coordinate, 
 /// assert!(alphabetic_file_to_numeric("!@#dsf234").is_err());
 /// assert!(alphabetic_file_to_numeric("").is_err());
 /// ```
-pub fn alphabetic_file_to_numeric(alphabetic_file: &str) -> Result<u32, NotationParseError>
+pub fn alphabetic_file_to_numeric(alphabetic_file: &str) -> Result<UInt, NotationParseError>
 {
     trace!("Entering alphabetic_file_to_numeric()");
     trace!("alphabetic_file: {}", alphabetic_file);
-    let mut number: u32 = 0;
-    let mut power: u32 = 1;
+    let mut number: UInt = 0;
+    let mut power: UInt = 1;
 
     for char in alphabetic_file.chars().rev()
     {
@@ -135,7 +99,7 @@ pub fn alphabetic_file_to_numeric(alphabetic_file: &str) -> Result<u32, Notation
             debug!("Alphabetic character found. Converting.");
             // Convert ASCII into their digits such that 'a' has a value of 1, 'b' has a value of
             // 2, etc.
-            number += (new_char as u32 - 'a' as u32 + 1) * power;
+            number += (new_char as UInt - 'a' as UInt + 1) * power;
             power *= 26;
             debug!("New running total: {}", number);
             debug!("Power: {}", power);
@@ -160,9 +124,9 @@ pub fn alphabetic_file_to_numeric(alphabetic_file: &str) -> Result<u32, Notation
 /// a very thin wrapper around [str::Parse]. As noted in [alphabetic_file_to_numeric], a rank
 /// of 1 represents a coordinate with an index of 0, so passing "0" into this function is actually
 /// an error and will return as such.
-pub fn rank_to_numeric(rank_str: &str) -> Result<u32, NotationParseError>
+pub fn rank_to_numeric(rank_str: &str) -> Result<UInt, NotationParseError>
 {
-    let rank = rank_str.parse::<u32>()?;
+    let rank = rank_str.parse::<UInt>()?;
     // We need to subtract one since a rank of 1 is the 0th rank. Thus if we pass "0", that is
     // actually invalid.
     if rank == 0

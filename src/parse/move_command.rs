@@ -1,6 +1,7 @@
 //! Specifies the [MoveCommand] type.
 
 use std::str::FromStr;
+use crate::board::{Line, PieceType, Square};
 
 /// Represents a parsed move from algebraic notation
 ///
