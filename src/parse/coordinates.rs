@@ -99,7 +99,7 @@ pub fn alphabetic_file_to_numeric(alphabetic_file: &str) -> Result<UInt, Notatio
             debug!("Alphabetic character found. Converting.");
             // Convert ASCII into their digits such that 'a' has a value of 1, 'b' has a value of
             // 2, etc.
-            number += (new_char as UInt - 'a' as UInt + 1) * power;
+            number += (new_char as UInt - b'a' + 1) * power;
             power *= 26;
             debug!("New running total: {}", number);
             debug!("Power: {}", power);
@@ -133,7 +133,7 @@ pub fn rank_to_numeric(rank_str: &str) -> Result<UInt, NotationParseError>
     {
         return Err(NotationParseError::ZeroRankIndex);
     }
-    return Ok(rank - 1);
+    Ok(rank - 1)
 }
 
 #[cfg(test)]
