@@ -8,6 +8,7 @@
 /// - Rook
 /// - Queen
 /// - King
+#[derive(Debug)]
 pub enum PieceType {
     /// A pawn piece
     Pawn,

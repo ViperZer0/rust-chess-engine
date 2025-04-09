@@ -31,5 +31,3 @@ pub enum NotationParseError
     #[error("`{0}` is not a valid piece type")]
     InvalidPieceCharacter(String),
 }
-
-
