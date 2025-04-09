@@ -54,4 +54,5 @@ mod parse_line;
 
 // Re-exports
 pub use move_command::MoveCommand;
+pub use move_command::MoveData;
 pub use error::NotationParseError;
