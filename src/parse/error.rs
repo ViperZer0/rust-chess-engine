@@ -31,6 +31,7 @@ pub enum NotationParseError
     /// The command was given an invalid piece character/type.
     #[error("`{0}` is not a valid piece type")]
     InvalidPieceCharacter(String),
+    /// The error variant returned when [alphabetic_file_to_numeric()] overflows.
     #[error("Integer overflow trying to convert {0} to a number.")]
     Overflow(String),
 }
