@@ -5,7 +5,7 @@ use regex::RegexBuilder;
 
 use crate::board::{Line, PieceType, Square};
 
-use super::{coordinates::algebraic_to_tuple, NotationParseError};
+use super::NotationParseError;
 
 /// Represents a parsed move from algebraic notation
 ///
@@ -107,7 +107,7 @@ impl FromStr for MoveData
             true => None,
             false => Some(Line::from_str(discriminant)?),
         };
-        let destination = algebraic_to_tuple(destination)?;
+        let destination = Square::from_str(destination)?;
 
         Ok(Self
         {

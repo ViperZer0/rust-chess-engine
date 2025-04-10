@@ -1,19 +1,18 @@
 //! This module handles converting between coordinates in algebraic notation (i.e a3, c6, h1) and
 //! their tuple/numerical representations.
 
+use std::str::FromStr;
+
 use log::{debug, error, trace};
-use regex::Regex;
 
 use crate::{board::Square, UInt};
 
 use super::error::NotationParseError;
 
 /// Converts an algebraic notated string (such as "a5", "c8", etc)
-/// into a tuple of the form 
-/// the file (i.e the alphabetical part of the coordinate) and the second represents the rank (i.e
-/// the numerical part of the coordinate). Note that this effectively reverses the order of the
-/// coordinate system.
+/// into a [Square].
 ///
+/// This is a wrapper around Square's [FromStr] implementation.
 /// This function works with both uppercase and lowercase ASCII characters.
 ///
 /// # Arguments
@@ -23,30 +22,18 @@ use super::error::NotationParseError;
 /// # Examples
 /// 
 /// ```
-/// # use rust_chess_engine::coordinates::algebraic_to_tuple;
-/// # use rust_chess_engine::coordinates::Coordinate;
-/// let tuple = algebraic_to_tuple("a4").unwrap();
-/// assert_eq!(tuple, Coordinate { rank: Ok(3), file: Ok(0) });
+/// # use rust_chess_engine::parse::algebraic_to_square;
+/// # use rust_chess_engine::board::Square;
+/// // This is equivalent to Square::from_str("a4").unwrap();
+/// let square = algebraic_to_square("a4").unwrap();
+/// assert_eq!(square, Square::new(3,0));
 /// ```
 ///
 /// Note that algebraic notation is 1-based, but the tuple notation is 0-based.
 /// Thus a = 0 for files, and the first rank (or rank 1) is rank 0.
-pub fn algebraic_to_tuple(algebraic_notated_string: &str) -> Result<Square, NotationParseError>
+pub fn algebraic_to_square(algebraic_notated_string: &str) -> Result<Square, NotationParseError>
 {
-    let re = Regex::new(r"([a-zA-Z]+)([0-9]+)").unwrap();
-    let captures = re.captures(algebraic_notated_string);
-    if captures.is_none()
-    {
-        return Err(NotationParseError::InvalidFormat(algebraic_notated_string.to_string()));
-    }
-
-    let captures = captures.unwrap();
-    let file_str = captures.get(1).unwrap().as_str();
-    let rank_str = captures.get(2).unwrap().as_str();
-    let file = alphabetic_file_to_numeric(file_str)?;
-    let rank = rank_to_numeric(rank_str)?;
-
-    Ok(Square::new(rank, file))
+    Square::from_str(algebraic_notated_string)
 }
 
 /// Converts an alphabetical string into its numeric representation as if 
@@ -64,8 +51,7 @@ pub fn algebraic_to_tuple(algebraic_notated_string: &str) -> Result<Square, Nota
 /// # Examples
 ///
 /// ```
-/// # use rust_chess_engine::coordinates::alphabetic_file_to_numeric;
-/// # env_logger::init();
+/// # use rust_chess_engine::parse::alphabetic_file_to_numeric;
 /// assert_eq!(alphabetic_file_to_numeric("A").unwrap(), 0);
 /// assert_eq!(alphabetic_file_to_numeric("h").unwrap(), 7);
 /// // Non-standard chess files
@@ -75,13 +61,16 @@ pub fn algebraic_to_tuple(algebraic_notated_string: &str) -> Result<Square, Nota
 /// // Invalid chess file notation
 /// assert!(alphabetic_file_to_numeric("!@#dsf234").is_err());
 /// assert!(alphabetic_file_to_numeric("").is_err());
+/// // Integer overflow, since each additional character requires an additional power of 26 to calculate,
+/// // and we default to using a u8 which is sufficient for characters a-h.
+/// assert!(alphabetic_file_to_numeric("aaaaaa").is_err())
 /// ```
 pub fn alphabetic_file_to_numeric(alphabetic_file: &str) -> Result<UInt, NotationParseError>
 {
     trace!("Entering alphabetic_file_to_numeric()");
     trace!("alphabetic_file: {}", alphabetic_file);
     let mut number: UInt = 0;
-    let mut power: UInt = 1;
+    let mut power: Option<UInt> = Some(1); //once told me the world was gonna roll me
 
     for char in alphabetic_file.chars().rev()
     {
@@ -94,15 +83,20 @@ pub fn alphabetic_file_to_numeric(alphabetic_file: &str) -> Result<UInt, Notatio
             continue;
         }
         // Otherwise check if it's alphabetic and do some MATH
-        if new_char.is_alphabetic()
+        if new_char.is_ascii_alphabetic()
         {
+            if power.is_none()
+            {
+                error!("Overflow detected when converting alphabetic character to number.
+                        This probably means you tried to enter too big of a string to convert.");
+                return Err(NotationParseError::Overflow(alphabetic_file.to_string()))
+            }
             debug!("Alphabetic character found. Converting.");
             // Convert ASCII into their digits such that 'a' has a value of 1, 'b' has a value of
             // 2, etc.
-            number += (new_char as UInt - b'a' + 1) * power;
-            power *= 26;
-            debug!("New running total: {}", number);
-            debug!("Power: {}", power);
+            number += (new_char as UInt - b'a' + 1) * power.unwrap();
+            // An integer overflow isn't a problem until we try to *use* that overflowed integer.
+            power = power.unwrap().checked_mul(26);
         }
         else
         {

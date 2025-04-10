@@ -7,6 +7,7 @@ use thiserror::Error;
 /// The error type returned by functions in the [crate::parse] module, covering invalid syntax and
 /// formatting in a given algebraically notated command
 #[derive(Debug, Error, PartialEq)]
+#[non_exhaustive]
 pub enum NotationParseError
 {
     /// The error variant returned when parsing the string as a u32 fails.
@@ -30,4 +31,6 @@ pub enum NotationParseError
     /// The command was given an invalid piece character/type.
     #[error("`{0}` is not a valid piece type")]
     InvalidPieceCharacter(String),
+    #[error("Integer overflow trying to convert {0} to a number.")]
+    Overflow(String),
 }

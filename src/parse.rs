@@ -39,6 +39,8 @@
 //! # Examples
 //! You probably want to start by creating a [MoveCommand] from an algebraically notated string.
 //! ```
+//! # use rust_chess_engine::parse::MoveCommand;
+//! # use std::str::FromStr;
 //! let next_move = MoveCommand::from_str("Rxb5").unwrap();
 //! println!("{:?}", next_move);
 //! /* This will print the following:
@@ -51,8 +53,11 @@ mod coordinates;
 mod error;
 mod parse_piece_type;
 mod parse_line;
+mod parse_square;
 
 // Re-exports
 pub use move_command::MoveCommand;
 pub use move_command::MoveData;
 pub use error::NotationParseError;
+pub use coordinates::alphabetic_file_to_numeric;
+pub use coordinates::algebraic_to_square;
