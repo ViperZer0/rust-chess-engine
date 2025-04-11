@@ -18,3 +18,12 @@ pub struct BoardConfiguration
     // I'm not sure if a vec or a hashmap is better here.
     pieces: HashMap<Square, Piece>,
 }
+
+impl BoardConfiguration
+{
+    /// Gets the pieces of the board as a hashmap.
+    pub fn get_pieces(&self) -> &HashMap<Square, Piece>
+    {
+        return &self.pieces;
+    }
+}

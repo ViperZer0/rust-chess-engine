@@ -16,4 +16,5 @@ pub use r#move::Move;
 pub use board::Board;
 pub use player_color::PlayerColor;
 pub use piece::Piece;
+pub use board_config::BoardConfiguration;
 

@@ -54,6 +54,7 @@ mod error;
 mod parse_piece_type;
 mod parse_line;
 mod parse_square;
+mod parse_board_config;
 
 // Re-exports
 pub use move_command::MoveCommand;

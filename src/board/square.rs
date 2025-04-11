@@ -4,7 +4,7 @@ use crate::UInt;
 
 /// Represents a space on the board, specified by its coordinates in both
 /// rank and file.
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Eq, Hash)]
 pub struct Square {
     rank: UInt,
     file: UInt,
