@@ -37,12 +37,17 @@ pub fn algebraic_to_square(algebraic_notated_string: &str) -> Result<Square, Not
 }
 
 /// Converts an alphabetical string into its numeric representation as if 
-/// the string were a file on a chessboard. While a standard chess board only works with this from
-/// the letters a-h, this function supports chessboards up to 26 files and uses all letters from
-/// a-z. After that, the function uses "spreadsheet" logic, where the next file after Z is AA, and
-/// after ZZ comes AAA, etc.
+/// the string were a file on a chessboard. 
 ///
-/// This function works with both uppercase and lowercase ASCII characters.
+/// While a standard chess board only works with this from
+/// the letters a-h, this function extrapolates to support chessboards up to 26 files and uses all letters from
+/// a-z. After that, the function uses "spreadsheet" logic, where the next file after Z is AA, and
+/// after ZZ comes AAA, etc. Note that this *will* cause an overflow error by default with any
+/// file greater than or equal to index 255 (file "iv"), since everything uses u8 internally. This is fixable
+/// using a larger integer size, and in theory you can just change [UInt].
+///
+/// This function works with both uppercase and lowercase ASCII characters, they are all converted
+/// to lowercase internally.
 ///
 /// # Arguments
 ///
@@ -58,12 +63,14 @@ pub fn algebraic_to_square(algebraic_notated_string: &str) -> Result<Square, Not
 /// assert_eq!(alphabetic_file_to_numeric("i").unwrap(), 8);
 /// assert_eq!(alphabetic_file_to_numeric("z").unwrap(), 25);
 /// assert_eq!(alphabetic_file_to_numeric("aa").unwrap(), 26);
+/// assert_eq!(alphabetic_file_to_numeric("iu").unwrap(), 254);
 /// // Invalid chess file notation
 /// assert!(alphabetic_file_to_numeric("!@#dsf234").is_err());
 /// assert!(alphabetic_file_to_numeric("").is_err());
 /// // Integer overflow, since each additional character requires an additional power of 26 to calculate,
 /// // and we default to using a u8 which is sufficient for characters a-h.
-/// assert!(alphabetic_file_to_numeric("aaaaaa").is_err())
+/// assert!(alphabetic_file_to_numeric("aaaaaa").is_err());
+/// assert!(alphabetic_file_to_numeric("iv").is_err());
 /// ```
 pub fn alphabetic_file_to_numeric(alphabetic_file: &str) -> Result<UInt, NotationParseError>
 {
@@ -94,7 +101,12 @@ pub fn alphabetic_file_to_numeric(alphabetic_file: &str) -> Result<UInt, Notatio
             debug!("Alphabetic character found. Converting.");
             // Convert ASCII into their digits such that 'a' has a value of 1, 'b' has a value of
             // 2, etc.
-            number += (new_char as UInt - b'a' + 1) * power.unwrap();
+            let num = number.checked_add((new_char as UInt - b'a' + 1) * power.unwrap());
+            if num.is_none()
+            {
+                return Err(NotationParseError::Overflow(alphabetic_file.to_string()));
+            }
+            number = num.unwrap();
             // An integer overflow isn't a problem until we try to *use* that overflowed integer.
             power = power.unwrap().checked_mul(26);
         }
