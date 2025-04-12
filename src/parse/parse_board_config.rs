@@ -36,8 +36,8 @@ impl FromStr for BoardConfiguration
 #[cfg(test)]
 mod tests
 {
-    use std::{collections::HashMap, hash::Hash};
-    use crate::board::{Board, Piece, PieceType, PlayerColor, Square};
+    use std::collections::HashMap;
+    use crate::board::{Piece, PieceType, PlayerColor, Square};
     use super::*;
 
     fn add_all_pieces_to_map(hashmap: &mut HashMap<Square, Piece>)

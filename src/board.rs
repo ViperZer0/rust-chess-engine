@@ -8,6 +8,7 @@ mod r#move;
 mod board;
 mod board_config;
 mod player_color;
+mod error;
 
 pub use line::Line;
 pub use square::Square;
