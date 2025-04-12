@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, fmt::Display};
 
 use super::{Piece, Square};
 
@@ -13,6 +13,7 @@ use super::{Piece, Square};
 /// - Halfmoves (used to track fifty-move rule)
 ///     - Number of moves since last capture or pawn advance.
 /// - Fullmoves
+#[derive(Debug, PartialEq)]
 pub struct BoardConfiguration
 {
     // I'm not sure if a vec or a hashmap is better here.
@@ -25,5 +26,13 @@ impl BoardConfiguration
     pub fn get_pieces(&self) -> &HashMap<Square, Piece>
     {
         return &self.pieces;
+    }
+}
+
+impl Display for BoardConfiguration
+{
+    // This will print out the FEN notation of a board configuration.
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        todo!()
     }
 }

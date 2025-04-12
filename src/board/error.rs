@@ -4,6 +4,7 @@ use thiserror::Error;
 
 /// Errors that are returned by the board when attempting to make an invalid move.
 #[derive(Debug, Error)]
+#[non_exhaustive]
 pub enum MoveError
 {
     /// The error returned when there was *no* possible moves.
