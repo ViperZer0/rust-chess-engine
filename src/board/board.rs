@@ -1,6 +1,6 @@
 use crate::parse::MoveCommand;
 
-use super::{error::MoveError, r#move::Move, BoardConfiguration};
+use super::{error::MoveError, r#move::Move, BoardConfiguration, BoardResult, PlayerColor};
 
 /// A given board state.
 ///
@@ -9,6 +9,7 @@ use super::{error::MoveError, r#move::Move, BoardConfiguration};
 /// maintain the internal state and not violate the rules of chess or anything. Boards are
 /// immutable: making moves on a board does not modify the existing board but instead returns a new
 /// one.
+#[derive(Clone)]
 pub struct Board 
 {
 }
@@ -26,13 +27,22 @@ impl Board {
     /// Allows creation of a new board with a custom configuration.
     ///
     /// Takes a [BoardConfiguration] which represents the desired starting state of the board.
-    pub fn initialize_board_with_configuration(board_configuration: BoardConfiguration) -> Self
+    pub fn initialize_board_with_configuration(board_configuration: &BoardConfiguration) -> Self
     {
         todo!();
     }
 
     /// Gets the board configuration associated with the current board state.
     pub fn get_board_configuration(&self) -> BoardConfiguration
+    {
+        todo!();
+    }
+
+    /// Returns the current result of the board as a [BoardResult].
+    ///
+    /// This contains information about if the game is over (and who won) or if the game is still
+    /// in progress.
+    pub fn get_game_result(&self) -> BoardResult
     {
         todo!();
     }
@@ -130,7 +140,7 @@ impl Board {
     ///
     /// # Arguments
     ///
-    /// * `legal_move` - A legal move which will be made on the board.
+    /// * `r#move` - A legal move which will be made on the board.
     ///
     /// # Examples
     ///
@@ -145,7 +155,16 @@ impl Board {
     /// let r#move = board.check_move(r#move).unwrap();
     /// let new_board = board.make_move(r#move);
     /// ```
-    fn make_move(&self, legal_move: Move) -> Self
+    fn make_move(&self, r#move: Move) -> Self
+    {
+        todo!();
+    }
+
+    /// The in-place version of [Board::make_move]. 
+    ///
+    /// Instead of returning a new board, this function modifies it in place, altering the board
+    /// state as necessary to represent a valid configuration.
+    fn make_move_in_place(&mut self, r#move: Move)
     {
         todo!();
     }
@@ -156,7 +175,7 @@ mod tests
 {
     use std::str::FromStr;
 
-    use crate::{board::BoardConfiguration, parse::MoveCommand};
+    use crate::{board::{BoardConfiguration, PlayerColor}, parse::MoveCommand};
 
     use super::Board;
 
@@ -200,7 +219,7 @@ mod tests
     #[test]
     fn test_moving_out_of_check_succeeds()
     {
-        let board = Board::initialize_board_with_configuration(BoardConfiguration::from_str("q6k/8/8/3B4/8/8/8/K7 w - - 0 1").unwrap());
+        let board = Board::initialize_board_with_configuration(&BoardConfiguration::from_str("q6k/8/8/3B4/8/8/8/K7 w - - 0 1").unwrap());
         let move_command = MoveCommand::from_str("Kb2").unwrap();
         let new_board = board.attempt_move(move_command);
         assert!(new_board.is_ok());
@@ -209,7 +228,7 @@ mod tests
     #[test]
     fn test_blocking_check_works()
     {
-        let board = Board::initialize_board_with_configuration(BoardConfiguration::from_str("q6k/8/8/3B4/8/8/8/K7 w - - 0 1").unwrap());
+        let board = Board::initialize_board_with_configuration(&BoardConfiguration::from_str("q6k/8/8/3B4/8/8/8/K7 w - - 0 1").unwrap());
         let move_command = MoveCommand::from_str("Ba2").unwrap();
         let new_board = board.attempt_move(move_command);
         assert!(new_board.is_ok());
@@ -218,10 +237,57 @@ mod tests
     #[test]
     fn test_capturing_checking_piece_works()
     {
-        let board = Board::initialize_board_with_configuration(BoardConfiguration::from_str("q6k/8/8/3B4/8/8/8/K7 w - - 0 1").unwrap());
+        let board = Board::initialize_board_with_configuration(&BoardConfiguration::from_str("q6k/8/8/3B4/8/8/8/K7 w - - 0 1").unwrap());
         let move_command = MoveCommand::from_str("Bxa8").unwrap();
         let new_board = board.attempt_move(move_command);
         assert!(new_board.is_ok());
     }
+
+    #[test]
+    fn test_clone_configuration_identical()
+    {
+        let board = Board::default_starting_board();
+        let new_board = board.clone();
+        assert_eq!(board.get_board_configuration(), new_board.get_board_configuration());
+    }
+
+    #[test]
+    fn test_clone_identical_for_custom_board_config()
+    {
+        let board_config = BoardConfiguration::from_str("q7/8/8/8/8/8/1Q6/1K6 w - - 0 1").unwrap();
+        let board = Board::initialize_board_with_configuration(&board_config);
+        let new_board = board.clone();
+        assert_eq!(board_config, new_board.get_board_configuration());
+    }
+
+    #[test]
+    fn initialize_board_in_progress()
+    {
+        let board = Board::default_starting_board();
+        assert!(board.get_game_result().is_in_progress());
+    }
+
+    #[test]
+    fn initialize_board_in_end_position()
+    {
+        let board_config= BoardConfiguration::from_str("3k4/3Q4/3K4/8/8/8/8/8 b - - 0 1").unwrap();
+        let board = Board::initialize_board_with_configuration(&board_config);
+        assert!(board.get_game_result().is_over());
+        assert!(!board.get_game_result().is_draw());
+        assert_eq!(PlayerColor::White, board.get_game_result().get_winner().unwrap());
+    }
+
+    #[test]
+    fn initialize_board_move_into_end_position()
+    {
+        let board_config = BoardConfiguration::from_str("3k4/8/3K4/8/Q7/8/8/8 w - - 0 1").unwrap();
+        let board = Board::initialize_board_with_configuration(&board_config);
+        let r#move = MoveCommand::from_str("Qd7").unwrap();
+        let new_board = board.attempt_move(r#move).unwrap();
+        assert!(new_board.get_game_result().is_over());
+        assert!(!new_board.get_game_result().is_draw());
+        assert_eq!(PlayerColor::White, new_board.get_game_result().get_winner().unwrap());
+    }
+
 }
 
