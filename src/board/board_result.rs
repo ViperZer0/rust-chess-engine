@@ -1,4 +1,18 @@
+use thiserror::Error;
+
 use super::PlayerColor;
+
+/// The error type returned by [BoardResult::get_winner()].
+#[derive(Debug, Error, PartialEq)]
+pub enum GetWinnerError
+{
+    /// There is no winner because the game is still in progress.
+    #[error("No winner; the game is still in progress!")]
+    StillInProgress,
+    /// There is no winner because the game ended in a draw.
+    #[error("No winner, the game ended in a draw.")]
+    Draw(DrawReason),
+}
 
 /// The current game outcome. A game still in progress is [InProgress],
 /// while a game that has ended will have one of various enum values recording the game outcome,
@@ -53,15 +67,29 @@ impl BoardResult
         !self.is_in_progress()
     }
 
-    /// Returns the [PlayerColor] of the winning side,
-    /// or [None] if the game is still in progress or ended in a draw.
-    pub fn get_winner(&self) -> Option<PlayerColor>
+    /// Returns true if the game ended in a victory for either White or Black.
+    /// Returns false if the game is either in progress or ended in a draw.
+    pub fn has_winner(&self) -> bool
     {
         match self
         {
-            Self::WhiteWin => Some(PlayerColor::White),
-            Self::BlackWin => Some(PlayerColor::Black),
-            _ => None,
+            Self::WhiteWin => true,
+            Self::BlackWin => true,
+            Self::InProgress => false,
+            Self::Draw(_) => false,
+        }
+    }
+
+    /// Returns the [PlayerColor] of the winning side,
+    /// or [None] if the game is still in progress or ended in a draw.
+    pub fn get_winner(&self) -> Result<PlayerColor, GetWinnerError>
+    {
+        match self
+        {
+            Self::WhiteWin => Ok(PlayerColor::White),
+            Self::BlackWin => Ok(PlayerColor::Black),
+            Self::InProgress => Err(GetWinnerError::StillInProgress),
+            Self::Draw(x) => Err(GetWinnerError::Draw(*x)),
         }
     }
 
@@ -117,10 +145,10 @@ mod tests
     #[test]
     fn test_winner()
     {
-        assert_eq!(None, BoardResult::InProgress.get_winner());
-        assert_eq!(None, BoardResult::Draw(DrawReason::Agreement).get_winner());
-        assert_eq!(Some(PlayerColor::White), BoardResult::WhiteWin.get_winner());
-        assert_eq!(Some(PlayerColor::Black), BoardResult::BlackWin.get_winner());
+        assert!(BoardResult::InProgress.get_winner().is_err());
+        assert!(BoardResult::Draw(DrawReason::Agreement).get_winner().is_err());
+        assert_eq!(Ok(PlayerColor::White), BoardResult::WhiteWin.get_winner());
+        assert_eq!(Ok(PlayerColor::Black), BoardResult::BlackWin.get_winner());
     }
 
     #[test]
@@ -141,7 +169,3 @@ mod tests
         assert_eq!(Some(DrawReason::Agreement), BoardResult::Draw(DrawReason::Agreement).get_draw_reason());
     }
 }
-
-
-
-
