@@ -162,8 +162,7 @@ impl FromStr for MoveData
         // This should work even if the capture group is an empty string???
         let piece_type = captures.name("piece").unwrap().as_str();
         let discriminant = captures.name("discriminant").unwrap().as_str();
-        let capture = captures.name("capture").unwrap().is_empty();
-        println!("{}", capture);
+        let capture = !captures.name("capture").unwrap().is_empty();
         let destination = captures.name("destination").unwrap().as_str();
 
         let piece_type = PieceType::from_str(piece_type)?;
@@ -221,7 +220,7 @@ mod tests
                 assert_eq!(PieceType::Pawn, move_data.piece_type);
                 assert!(move_data.discriminant.is_none());
                 assert!(!move_data.capture);
-                assert_eq!(Square::new(4, 3), move_data.target_square);
+                assert_eq!(Square::new(3, 4), move_data.target_square);
             }
             MoveCommand::KingsideCastle => assert!(false, "Expected NormalMove, got KingsideCastle"),
             MoveCommand::QueensideCastle => assert!(false, "Expected NormalMove, got QueensideCastle"),
