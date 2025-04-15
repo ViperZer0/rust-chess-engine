@@ -18,13 +18,77 @@ use super::NotationParseError;
 /// - A queenside castle (O-O-O)
 /// - Basically everything else.
 #[derive(Debug)]
-pub enum MoveCommand {
+pub enum MoveCommand
+{
     /// A "normal" chess move, which is basically any move that isn't a castle.
     NormalMove(MoveData),
     /// A kingside castle (notated as O-O)
     KingsideCastle,
     /// A queenside castle (notated as O-O-O)
     QueensideCastle,
+}
+
+impl MoveCommand
+{
+    /// Returns true when this move is *not* a castle.
+    /// So basically other move, including captures.
+    pub fn is_normal_move(&self) -> bool
+    {
+        match self
+        {
+            MoveCommand::NormalMove(_) => true,
+            MoveCommand::KingsideCastle => false,
+            MoveCommand::QueensideCastle => false,
+        }
+    }
+
+    /// Returns true if this move is a castling move.
+    pub fn is_castle(&self) -> bool
+    {
+        match self
+        {
+            MoveCommand::NormalMove(_) => false,
+            MoveCommand::KingsideCastle => true,
+            MoveCommand::QueensideCastle => true,
+        }
+    }
+
+    /// Returns true if this move is a kingside castle,
+    /// false if it's a queenside castle or a "normal" move.
+    pub fn is_kingside_castle(&self) -> bool
+    {
+        match self
+        {
+            MoveCommand::NormalMove(_) => false,
+            MoveCommand::QueensideCastle => false,
+            MoveCommand::KingsideCastle => true,
+        }
+    }
+
+    /// Returns true if this move is a queenside castle,
+    /// false if it's a kingside castle or a "normal" move.
+    pub fn is_queenside_castle(&self) -> bool
+    {
+        match self
+        {
+            MoveCommand::NormalMove(_) => false,
+            MoveCommand::KingsideCastle => false,
+            MoveCommand::QueensideCastle => true,
+        }
+    }
+
+    /// Returns [Some] containing a [MoveData] if this move is a normal move.
+    /// If this move is a castle, it has no associated [MoveData] so returns [None].
+    pub fn get_move_data(&self) -> Option<MoveData>
+    {
+        match self
+        {
+            MoveCommand::NormalMove(x) => Some(*x),
+            MoveCommand::KingsideCastle => None,
+            MoveCommand::QueensideCastle => None,
+        }
+    }
+
 }
 
 /// Represents the information included with what we might consider to be a 
@@ -49,7 +113,7 @@ pub enum MoveCommand {
 /// to indicate whether a move placed a king in check by suffixing the move with a "+".
 /// This doesn't actually add any new information, however, so is ignored in our parser
 /// as it might make it harder for beginners to input moves.
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone)]
 pub struct MoveData
 {
     /// What piece type is being moved. Defaults to pawn if no letter was specified. 
@@ -99,6 +163,7 @@ impl FromStr for MoveData
         let piece_type = captures.name("piece").unwrap().as_str();
         let discriminant = captures.name("discriminant").unwrap().as_str();
         let capture = captures.name("capture").unwrap().is_empty();
+        println!("{}", capture);
         let destination = captures.name("destination").unwrap().as_str();
 
         let piece_type = PieceType::from_str(piece_type)?;
@@ -118,3 +183,133 @@ impl FromStr for MoveData
         })
     }
 }
+
+#[cfg(test)]
+mod tests
+{
+    use super::*;
+
+    #[test]
+    fn test_kingside_castle_notation_works()
+    {
+        assert!(MoveCommand::from_str("o-o").unwrap().is_kingside_castle());
+        assert!(MoveCommand::from_str("O-O").unwrap().is_kingside_castle());
+        assert!(!MoveCommand::from_str("o-o").unwrap().is_queenside_castle());
+        assert!(!MoveCommand::from_str("O-O").unwrap().is_queenside_castle());
+        assert!(!MoveCommand::from_str("o-o").unwrap().is_normal_move());
+        assert!(!MoveCommand::from_str("O-O").unwrap().is_normal_move());
+    }
+
+    #[test]
+    fn test_queenside_castle_notation_works()
+    {
+        assert!(MoveCommand::from_str("o-o-o").unwrap().is_queenside_castle());
+        assert!(MoveCommand::from_str("O-O-O").unwrap().is_queenside_castle());
+        assert!(!MoveCommand::from_str("o-o-o").unwrap().is_kingside_castle());
+        assert!(!MoveCommand::from_str("O-O-O").unwrap().is_kingside_castle());
+        assert!(!MoveCommand::from_str("o-o-o").unwrap().is_normal_move());
+        assert!(!MoveCommand::from_str("O-O-O").unwrap().is_normal_move());
+    }
+
+    #[test]
+    fn test_pawn_move_command()
+    {
+        let move_command = MoveCommand::from_str("e4").unwrap();
+        match move_command
+        {
+            MoveCommand::NormalMove(move_data) => {
+                assert_eq!(PieceType::Pawn, move_data.piece_type);
+                assert!(move_data.discriminant.is_none());
+                assert!(!move_data.capture);
+                assert_eq!(Square::new(4, 3), move_data.target_square);
+            }
+            MoveCommand::KingsideCastle => assert!(false, "Expected NormalMove, got KingsideCastle"),
+            MoveCommand::QueensideCastle => assert!(false, "Expected NormalMove, got QueensideCastle"),
+        }
+    }
+
+    #[test]
+    fn test_piece_move_command()
+    {
+        let move_command = MoveCommand::from_str("Bh8").unwrap();
+        assert!(move_command.is_normal_move());
+        let move_data = move_command.get_move_data().unwrap();
+        assert_eq!(PieceType::Bishop, move_data.piece_type);
+        assert!(move_data.discriminant.is_none());
+        assert!(!move_data.capture);
+        assert_eq!(Square::new(7, 7), move_data.target_square);
+    }
+
+    #[test]
+    fn test_capture_with_piece()
+    {
+        let move_command = MoveCommand::from_str("Rxa1").unwrap();
+        assert!(move_command.is_normal_move());
+        let move_data = move_command.get_move_data().unwrap();
+        assert_eq!(PieceType::Rook, move_data.piece_type);
+        assert!(move_data.discriminant.is_none());
+        assert!(move_data.capture);
+        assert_eq!(Square::new(0, 0), move_data.target_square);
+    }
+
+    #[test]
+    fn test_capture_with_pawn()
+    {
+        let move_command = MoveCommand::from_str("exd5").unwrap();
+        assert!(move_command.is_normal_move());
+        let move_data = move_command.get_move_data().unwrap();
+        assert_eq!(PieceType::Pawn, move_data.piece_type);
+        assert!(move_data.discriminant.is_some());
+        assert!(move_data.capture);
+        assert_eq!(Line::File(4), move_data.discriminant.unwrap());
+    }
+
+    #[test]
+    fn test_discriminant_file()
+    {
+        let move_command = MoveCommand::from_str("Nge2").unwrap();
+        assert!(move_command.is_normal_move());
+        let move_data = move_command.get_move_data().unwrap();
+        assert_eq!(PieceType::Knight, move_data.piece_type);
+        assert!(move_data.discriminant.is_some());
+        assert!(!move_data.capture);
+        assert_eq!(Line::File(6), move_data.discriminant.unwrap());
+    }
+
+    #[test]
+    fn test_discriminant_rank()
+    {
+        let move_command = MoveCommand::from_str("N1e2").unwrap();
+        assert!(move_command.is_normal_move());
+        let move_data = move_command.get_move_data().unwrap();
+        assert_eq!(PieceType::Knight, move_data.piece_type);
+        assert!(move_data.discriminant.is_some());
+        assert!(!move_data.capture);
+        assert_eq!(Line::Rank(0), move_data.discriminant.unwrap());
+    }
+
+    #[test]
+    fn test_discriminant_both()
+    {
+        let move_command = MoveCommand::from_str("Qh4e1").unwrap();
+        assert!(move_command.is_normal_move());
+        let move_data = move_command.get_move_data().unwrap();
+        assert_eq!(PieceType::Queen, move_data.piece_type);
+        assert!(move_data.discriminant.is_some());
+        assert!(!move_data.capture);
+        assert_eq!(Line::RankAndFile(7, 3), move_data.discriminant.unwrap());
+    }
+
+    #[test]
+    fn test_longest_notation()
+    {
+        let move_command = MoveCommand::from_str("Qh4xe1").unwrap();
+        assert!(move_command.is_normal_move());
+        let move_data = move_command.get_move_data().unwrap();
+        assert_eq!(PieceType::Queen, move_data.piece_type);
+        assert!(move_data.discriminant.is_some());
+        assert!(move_data.capture);
+        assert_eq!(Line::RankAndFile(7, 3), move_data.discriminant.unwrap());
+    }
+}
+
