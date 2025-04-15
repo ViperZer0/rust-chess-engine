@@ -66,3 +66,62 @@ impl FromStr for Square
         Ok(Square::new(rank, file))
     }
 }
+
+#[cfg(test)]
+mod tests
+{
+    use super::*;
+
+    #[test]
+    pub fn test_square_notation()
+    {
+        let square = Square::from_str("e4").unwrap();
+        assert_eq!(4, square.file);
+        assert_eq!(3, square.rank);
+    }
+
+    #[test]
+    pub fn test_square_notation_2()
+    {
+        let square = Square::from_str("a1").unwrap();
+        assert_eq!(0, square.file);
+        assert_eq!(0, square.rank);
+    }
+
+    #[test]
+    pub fn test_square_notation_3()
+    {
+        let square = Square::from_str("h8").unwrap();
+        assert_eq!(7, square.file);
+        assert_eq!(7, square.rank);
+    }
+
+    #[test]
+    pub fn test_square_notation_4()
+    {
+        let square = Square::from_str("f2").unwrap();
+        assert_eq!(5, square.file);
+        assert_eq!(1, square.rank);
+    }
+
+    #[test]
+    pub fn test_square_notation_failure()
+    {
+        let square = Square::from_str("askvzxcasdf1234234");
+        assert!(square.is_err());
+    }
+
+    #[test]
+    pub fn test_square_notation_failure_2()
+    {
+        let square = Square::from_str("");
+        assert!(square.is_err());
+    }
+
+    #[test]
+    pub fn test_square_notation_failure_3()
+    {
+        let square = Square::from_str("!a3");
+        assert!(square.is_err());
+    }
+}
