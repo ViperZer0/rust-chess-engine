@@ -210,7 +210,7 @@ mod tests
     #[test]
     fn test_moving_while_in_check_fails()
     {
-        let board = Board::initialize_board_with_configuration(BoardConfiguration::from_str("q6k/8/8/3B4/8/8/8/K7 w - - 0 1").unwrap());
+        let board = Board::initialize_board_with_configuration(&BoardConfiguration::from_str("q6k/8/8/3B4/8/8/8/K7 w - - 0 1").unwrap());
         let move_command = MoveCommand::from_str("Bc4").unwrap();
         let new_board = board.attempt_move(move_command);
         assert!(new_board.is_err());
