@@ -54,12 +54,11 @@ mod error;
 mod parse_piece_type;
 mod parse_line;
 mod parse_square;
-mod parse_board_config;
+mod parse_castling_availability;
 
 // Re-exports
 pub use move_command::MoveCommand;
 pub use move_command::MoveData;
 pub use error::NotationParseError;
-pub use parse_board_config::InvalidFENError;
 pub use coordinates::alphabetic_file_to_numeric;
 pub use coordinates::algebraic_to_square;
