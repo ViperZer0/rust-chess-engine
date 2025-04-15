@@ -1,10 +1,14 @@
 //! Specifies the [Square] type.
 
-use crate::UInt;
+use std::str::FromStr;
+
+use regex::Regex;
+
+use crate::{parse::{alphabetic_file_to_numeric, rank_to_numeric, NotationParseError}, UInt};
 
 /// Represents a space on the board, specified by its coordinates in both
 /// rank and file.
-#[derive(Debug, PartialEq, Eq, Hash)]
+#[derive(Debug, PartialEq, Eq, Hash, Copy, Clone)]
 pub struct Square {
     rank: UInt,
     file: UInt,
@@ -38,5 +42,27 @@ impl Square {
             rank,
             file
         }
+    }
+}
+
+impl FromStr for Square
+{
+    type Err = NotationParseError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let re = Regex::new(r"([a-zA-Z]+)([0-9]+)").unwrap();
+        let captures = re.captures(s);
+        if captures.is_none()
+        {
+            return Err(NotationParseError::InvalidFormat(s.to_string()));
+        }
+
+        let captures = captures.unwrap();
+        let file_str = captures.get(1).unwrap().as_str();
+        let rank_str = captures.get(2).unwrap().as_str();
+        let file = alphabetic_file_to_numeric(file_str)?;
+        let rank = rank_to_numeric(rank_str)?;
+
+        Ok(Square::new(rank, file))
     }
 }

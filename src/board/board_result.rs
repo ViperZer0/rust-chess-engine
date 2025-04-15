@@ -136,10 +136,10 @@ mod tests
     #[test]
     fn test_is_over()
     {
-        assert_eq!(true, BoardResult::BlackWin.is_in_progress());
-        assert_eq!(true, BoardResult::WhiteWin.is_in_progress());
-        assert_eq!(true, BoardResult::Draw(DrawReason::Agreement).is_in_progress());
-        assert_eq!(false, BoardResult::InProgress.is_in_progress());
+        assert_eq!(true, BoardResult::BlackWin.is_over());
+        assert_eq!(true, BoardResult::WhiteWin.is_over());
+        assert_eq!(true, BoardResult::Draw(DrawReason::Agreement).is_over());
+        assert_eq!(false, BoardResult::InProgress.is_over());
     }
 
     #[test]

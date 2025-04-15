@@ -51,10 +51,6 @@
 mod move_command;
 mod coordinates;
 mod error;
-mod parse_piece_type;
-mod parse_line;
-mod parse_square;
-mod parse_castling_availability;
 
 // Re-exports
 pub use move_command::MoveCommand;
@@ -62,3 +58,4 @@ pub use move_command::MoveData;
 pub use error::NotationParseError;
 pub use coordinates::alphabetic_file_to_numeric;
 pub use coordinates::algebraic_to_square;
+pub use coordinates::rank_to_numeric;

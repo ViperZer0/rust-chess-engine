@@ -160,8 +160,8 @@ pub enum InvalidFENError
     MissingFENSection(u8, String),
     #[error("The FEN notated string {0} had too few specified ranks!")]
     TooFewRanks(String),
-    #[error("The FEN notated string {0} had too many specified ranks!")]
-    TooManyRanks(String),
+    #[error("The FEN notated string {1} had too many specified ranks! (Remainder: {0})")]
+    TooManyRanks(String, String),
     #[error("There were too few files ({1} < 7) on rank {0} in the FEN record {2}")]
     TooFewFiles(u8, u8, String),
     #[error("There were too many files ({1} >= 8) on rank {0} in the FEN record {2}")]
@@ -274,22 +274,23 @@ fn parse_pieces(s: &str) -> Result<HashMap<Square, Piece>, InvalidFENError>
     let mut map = HashMap::new();
     let mut iter = s.split("/");
     // I don't know if it's a good idea or not to hard code this like this?
-    for rank in 7..=0
+    for rank in (0..8).rev()
     {
         let mut current_file = 0;
         let current_rank_string = iter.next().ok_or_else(|| InvalidFENError::TooFewRanks(s.to_string()))?;
         for char in current_rank_string.chars()
         {
+            if current_file >= 8
+            {
+                return Err(InvalidFENError::TooManyFiles(rank, current_file, s.to_string()));
+            }
+
             // If the character is a number, we insert that many empty squares before parsing
             // the next piece.
             if char.is_ascii_digit()
             {
                 let num_blank_spaces: u8 = char.to_digit(10).expect("to_digit() failed after asserting that char.is_ascii_digit()").try_into().expect("Somehow converting a single digit u32 to a u8 failed???");
                 current_file += num_blank_spaces;
-                if current_file >= 8
-                {
-                    return Err(InvalidFENError::TooManyFiles(rank, current_file, s.to_string()));
-                }
                 continue;
             }
 
@@ -309,17 +310,20 @@ fn parse_pieces(s: &str) -> Result<HashMap<Square, Piece>, InvalidFENError>
             map.insert(square, piece);
             // Move to next square
             current_file += 1;
-            if current_file >= 8
-            {
-                return Err(InvalidFENError::TooManyFiles(rank, current_file, s.to_string()));
-            }
+        }
+
+        // If we didn't reach the end of the board, return an error.
+        if current_file < 8
+        {
+            return Err(InvalidFENError::TooFewFiles(rank, current_file, s.to_string()));
         }
     }
 
     // If we still have stuff left over, that means we had too many ranks.
-    if iter.next().is_some()
+    let next = iter.next();
+    if next.is_some()
     {
-        return Err(InvalidFENError::TooManyRanks(s.to_string()))
+        return Err(InvalidFENError::TooManyRanks(next.unwrap().to_string(), s.to_string()))
     }
 
     Ok(map)
@@ -343,6 +347,8 @@ impl FromStr for CastlingAvailability
                 'Q' => white_castle_queenside = true,
                 'k' => black_castle_kingside = true,
                 'q' => black_castle_queenside = true,
+                // We can basically ignore this character, it just means nobody can castle.
+                '-' => (),
                 _ => return Err(InvalidFENError::InvalidCastlingCharacter(char.to_string(), s.to_string())),
             };
         }
