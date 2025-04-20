@@ -1,6 +1,8 @@
+use std::collections::HashMap;
+
 use crate::parse::MoveCommand;
 
-use super::{error::MoveError, r#move::Move, BoardConfiguration, BoardResult, PlayerColor};
+use super::{error::MoveError, r#move::Move, BoardConfiguration, BoardResult, Piece, Square};
 
 /// A given board state.
 ///
@@ -12,6 +14,9 @@ use super::{error::MoveError, r#move::Move, BoardConfiguration, BoardResult, Pla
 #[derive(Clone)]
 pub struct Board 
 {
+    /// Tracks what piece is on a given square.
+    /// If a key does not exist, that square is considered empty.
+    piece_mailbox: HashMap<Square, Piece>
 }
 
 impl Board {
@@ -19,7 +24,15 @@ impl Board {
     ///
     /// Creates and returns a new Board with the default arrangement and number of pieces, 16
     /// pawns, 8 per side, 4 knights, 4 rooks, etc.
-    pub fn default_starting_board() -> Self
+    pub fn new_default_starting_board() -> Self
+    {
+        todo!();
+    }
+
+    /// Creates a new empty board.
+    ///
+    /// This board has no pieces on it.
+    pub fn new_blank_board() -> Self
     {
         todo!();
     }
@@ -27,7 +40,7 @@ impl Board {
     /// Allows creation of a new board with a custom configuration.
     ///
     /// Takes a [BoardConfiguration] which represents the desired starting state of the board.
-    pub fn initialize_board_with_configuration(board_configuration: &BoardConfiguration) -> Self
+    pub fn new_board_with_configuration(board_configuration: &BoardConfiguration) -> Self
     {
         todo!();
     }
@@ -52,6 +65,15 @@ impl Board {
     ///
     /// Does not modify the board, but instead returns a new board with the move made.
     pub fn attempt_move(&self, attempted_move: MoveCommand) -> Result<Self, MoveError>
+    {
+        todo!();
+    }
+
+    /// Gets the piece located on a given square.
+    ///
+    /// If the square is currently empty, this function returns [None].
+    /// If the square is occupied, this function returns a reference to the [Piece].
+    pub fn get_piece(&self, square: &Square) -> Option<&Piece>
     {
         todo!();
     }
@@ -168,6 +190,30 @@ impl Board {
     {
         todo!();
     }
+
+    /// Adds a piece onto the board in the set position.
+    ///
+    /// This function modifies the current board and sets the given square to be the provided
+    /// piece. This doesn't do any checks to see if the provided square is already occupied, and
+    /// instead just forcibly overwrites the given location. This also doesn't move the given piece
+    /// from its old location, so this function is intended to be used in conjunction with and
+    /// after [remove_piece].
+    fn add_piece(&mut self, piece: Piece, position: &Square)
+    {
+        todo!();
+    }
+
+    /// Erases a piece from the board.
+    /// 
+    /// This function modifies the current board and removes whatever piece, if any, exists on the
+    /// board in that location. This doesn't do any checks to see what, if any, piece is there, it
+    /// simply removes all references to a piece on that square. This can be the result of a
+    /// capture, where the captured piece is removed from its square before it is replaced, or
+    /// simply a move where there is no longer a piece on the starting square.
+    fn remove_piece(&mut self, position: &Square)
+    {
+        todo!();
+    }
 }
 
 #[cfg(test)]
@@ -175,14 +221,14 @@ mod tests
 {
     use std::str::FromStr;
 
-    use crate::{board::{BoardConfiguration, PlayerColor}, parse::MoveCommand};
+    use crate::{board::{BoardConfiguration, Piece, PieceType, PlayerColor, Square}, parse::MoveCommand};
 
     use super::Board;
 
     #[test]
     fn test_making_legal_move_works()
     {
-        let board = Board::default_starting_board();
+        let board = Board::new_default_starting_board();
         let move_command = MoveCommand::from_str("e4").unwrap();
         let new_board = board.attempt_move(move_command).unwrap();
         let expected_new_board_config = BoardConfiguration::from_str("rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1").unwrap();
@@ -192,7 +238,7 @@ mod tests
     #[test]
     fn test_making_impossible_move_fails()
     {
-        let board = Board::default_starting_board();
+        let board = Board::new_default_starting_board();
         let move_command = MoveCommand::from_str("Qe3").unwrap();
         let new_board = board.attempt_move(move_command);
         assert!(new_board.is_err());
@@ -201,7 +247,7 @@ mod tests
     #[test]
     fn test_moving_through_occupancy_fails()
     {
-        let board = Board::default_starting_board();
+        let board = Board::new_default_starting_board();
         let move_command = MoveCommand::from_str("Qd3").unwrap();
         let new_board = board.attempt_move(move_command);
         assert!(new_board.is_err());
@@ -210,7 +256,7 @@ mod tests
     #[test]
     fn test_moving_while_in_check_fails()
     {
-        let board = Board::initialize_board_with_configuration(&BoardConfiguration::from_str("q6k/8/8/3B4/8/8/8/K7 w - - 0 1").unwrap());
+        let board = Board::new_board_with_configuration(&BoardConfiguration::from_str("q6k/8/8/3B4/8/8/8/K7 w - - 0 1").unwrap());
         let move_command = MoveCommand::from_str("Bc4").unwrap();
         let new_board = board.attempt_move(move_command);
         assert!(new_board.is_err());
@@ -219,7 +265,7 @@ mod tests
     #[test]
     fn test_moving_out_of_check_succeeds()
     {
-        let board = Board::initialize_board_with_configuration(&BoardConfiguration::from_str("q6k/8/8/3B4/8/8/8/K7 w - - 0 1").unwrap());
+        let board = Board::new_board_with_configuration(&BoardConfiguration::from_str("q6k/8/8/3B4/8/8/8/K7 w - - 0 1").unwrap());
         let move_command = MoveCommand::from_str("Kb2").unwrap();
         let new_board = board.attempt_move(move_command);
         assert!(new_board.is_ok());
@@ -228,7 +274,7 @@ mod tests
     #[test]
     fn test_blocking_check_works()
     {
-        let board = Board::initialize_board_with_configuration(&BoardConfiguration::from_str("q6k/8/8/3B4/8/8/8/K7 w - - 0 1").unwrap());
+        let board = Board::new_board_with_configuration(&BoardConfiguration::from_str("q6k/8/8/3B4/8/8/8/K7 w - - 0 1").unwrap());
         let move_command = MoveCommand::from_str("Ba2").unwrap();
         let new_board = board.attempt_move(move_command);
         assert!(new_board.is_ok());
@@ -237,7 +283,7 @@ mod tests
     #[test]
     fn test_capturing_checking_piece_works()
     {
-        let board = Board::initialize_board_with_configuration(&BoardConfiguration::from_str("q6k/8/8/3B4/8/8/8/K7 w - - 0 1").unwrap());
+        let board = Board::new_board_with_configuration(&BoardConfiguration::from_str("q6k/8/8/3B4/8/8/8/K7 w - - 0 1").unwrap());
         let move_command = MoveCommand::from_str("Bxa8").unwrap();
         let new_board = board.attempt_move(move_command);
         assert!(new_board.is_ok());
@@ -246,7 +292,7 @@ mod tests
     #[test]
     fn test_clone_configuration_identical()
     {
-        let board = Board::default_starting_board();
+        let board = Board::new_default_starting_board();
         let new_board = board.clone();
         assert_eq!(board.get_board_configuration(), new_board.get_board_configuration());
     }
@@ -255,7 +301,7 @@ mod tests
     fn test_clone_identical_for_custom_board_config()
     {
         let board_config = BoardConfiguration::from_str("q7/8/8/8/8/8/1Q6/1K6 w - - 0 1").unwrap();
-        let board = Board::initialize_board_with_configuration(&board_config);
+        let board = Board::new_board_with_configuration(&board_config);
         let new_board = board.clone();
         assert_eq!(board_config, new_board.get_board_configuration());
     }
@@ -263,7 +309,7 @@ mod tests
     #[test]
     fn initialize_board_in_progress()
     {
-        let board = Board::default_starting_board();
+        let board = Board::new_default_starting_board();
         assert!(board.get_game_result().is_in_progress());
     }
 
@@ -271,7 +317,7 @@ mod tests
     fn initialize_board_in_end_position()
     {
         let board_config= BoardConfiguration::from_str("3k4/3Q4/3K4/8/8/8/8/8 b - - 0 1").unwrap();
-        let board = Board::initialize_board_with_configuration(&board_config);
+        let board = Board::new_board_with_configuration(&board_config);
         assert!(board.get_game_result().is_over());
         assert!(!board.get_game_result().is_draw());
         assert_eq!(PlayerColor::White, board.get_game_result().get_winner().unwrap());
@@ -281,7 +327,7 @@ mod tests
     fn initialize_board_move_into_end_position()
     {
         let board_config = BoardConfiguration::from_str("3k4/8/3K4/8/Q7/8/8/8 w - - 0 1").unwrap();
-        let board = Board::initialize_board_with_configuration(&board_config);
+        let board = Board::new_board_with_configuration(&board_config);
         let r#move = MoveCommand::from_str("Qd7").unwrap();
         let new_board = board.attempt_move(r#move).unwrap();
         assert!(new_board.get_game_result().is_over());
@@ -289,5 +335,71 @@ mod tests
         assert_eq!(PlayerColor::White, new_board.get_game_result().get_winner().unwrap());
     }
 
-}
+    #[test]
+    fn adding_piece_to_board_works()
+    {
+        let mut board = Board::new_blank_board();
+        let square = Square::new(0, 0);
+        let new_piece = Piece::new(PlayerColor::White, PieceType::Pawn);
+        assert!(board.get_piece(&square).is_none());
+        board.add_piece(new_piece, &square);
+        assert!(board.get_piece(&square).is_some());
+        assert_eq!(new_piece, *board.get_piece(&square).unwrap());
+    }
 
+    #[test]
+    fn removing_piece_from_board_works()
+    {
+        let mut board = Board::new_default_starting_board();
+        let square = Square::new(0, 0);
+        assert!(board.get_piece(&square).is_some());
+        board.remove_piece(&square);
+        assert!(board.get_piece(&square).is_none());
+    }
+
+    #[test]
+    fn default_starting_board_has_all_correct_pieces()
+    {
+        let squares_to_pieces = [
+            ("a1", Piece::new(PlayerColor::White, PieceType::Rook)),
+            ("b1", Piece::new(PlayerColor::White, PieceType::Knight)),
+            ("c1", Piece::new(PlayerColor::White, PieceType::Bishop)),
+            ("d1", Piece::new(PlayerColor::White, PieceType::Queen)),
+            ("e1", Piece::new(PlayerColor::White, PieceType::King)),
+            ("f1", Piece::new(PlayerColor::White, PieceType::Bishop)),
+            ("g1", Piece::new(PlayerColor::White, PieceType::Knight)),
+            ("h1", Piece::new(PlayerColor::White, PieceType::Rook)),
+            ("a2", Piece::new(PlayerColor::White, PieceType::Pawn)),
+            ("b2", Piece::new(PlayerColor::White, PieceType::Pawn)),
+            ("c2", Piece::new(PlayerColor::White, PieceType::Pawn)),
+            ("d2", Piece::new(PlayerColor::White, PieceType::Pawn)),
+            ("e2", Piece::new(PlayerColor::White, PieceType::Pawn)),
+            ("f2", Piece::new(PlayerColor::White, PieceType::Pawn)),
+            ("g2", Piece::new(PlayerColor::White, PieceType::Pawn)),
+            ("a8", Piece::new(PlayerColor::Black, PieceType::Rook)),
+            ("b8", Piece::new(PlayerColor::Black, PieceType::Knight)),
+            ("c8", Piece::new(PlayerColor::Black, PieceType::Bishop)),
+            ("d8", Piece::new(PlayerColor::Black, PieceType::Queen)),
+            ("e8", Piece::new(PlayerColor::Black, PieceType::King)),
+            ("f8", Piece::new(PlayerColor::Black, PieceType::Bishop)),
+            ("g8", Piece::new(PlayerColor::Black, PieceType::Knight)),
+            ("h8", Piece::new(PlayerColor::Black, PieceType::Rook)),
+            ("a7", Piece::new(PlayerColor::Black, PieceType::Pawn)),
+            ("b7", Piece::new(PlayerColor::Black, PieceType::Pawn)),
+            ("c7", Piece::new(PlayerColor::Black, PieceType::Pawn)),
+            ("d7", Piece::new(PlayerColor::Black, PieceType::Pawn)),
+            ("e7", Piece::new(PlayerColor::Black, PieceType::Pawn)),
+            ("f7", Piece::new(PlayerColor::Black, PieceType::Pawn)),
+            ("g7", Piece::new(PlayerColor::Black, PieceType::Pawn)),
+            ("h7", Piece::new(PlayerColor::Black, PieceType::Pawn)),
+        ];
+
+        let board = Board::new_default_starting_board();
+        for (square_str, piece) in squares_to_pieces
+        {
+            let result = board.get_piece(&Square::from_str(square_str).unwrap());
+            assert!(result.is_some());
+            assert_eq!(piece, *result.unwrap());
+        }
+    }
+}
