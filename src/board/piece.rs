@@ -3,7 +3,7 @@ use super::{PieceType, PlayerColor};
 /// Represents one of the player's pieces.
 /// 
 /// Stores the piece type and the player's color.
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Copy, Clone)]
 pub struct Piece
 {
     piece_type: PieceType,
