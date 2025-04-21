@@ -21,7 +21,7 @@ use super::NotationParseError;
 pub enum MoveCommand
 {
     /// A "normal" chess move, which is basically any move that isn't a castle.
-    NormalMove(MoveData),
+    NormalMove(MoveCommandData),
     /// A kingside castle (notated as O-O)
     KingsideCastle,
     /// A queenside castle (notated as O-O-O)
@@ -77,9 +77,9 @@ impl MoveCommand
         }
     }
 
-    /// Returns [Some] containing a [MoveData] if this move is a normal move.
+    /// Returns [Some] containing a [MoveCommandData] if this move is a normal move.
     /// If this move is a castle, it has no associated [MoveData] so returns [None].
-    pub fn get_move_data(&self) -> Option<MoveData>
+    pub fn get_move_data(&self) -> Option<MoveCommandData>
     {
         match self
         {
@@ -114,7 +114,7 @@ impl MoveCommand
 /// This doesn't actually add any new information, however, so is ignored in our parser
 /// as it might make it harder for beginners to input moves.
 #[derive(Debug, Copy, Clone)]
-pub struct MoveData
+pub struct MoveCommandData
 {
     /// What piece type is being moved. Defaults to pawn if no letter was specified. 
     piece_type: PieceType,
@@ -136,12 +136,12 @@ impl FromStr for MoveCommand
         {
             "o-o" | "O-O" => Ok(Self::KingsideCastle),
             "o-o-o" | "O-O-O" => Ok(Self::QueensideCastle),
-            other => Ok(Self::NormalMove(MoveData::from_str(other)?)),
+            other => Ok(Self::NormalMove(MoveCommandData::from_str(other)?)),
         }
     }
 }
 
-impl FromStr for MoveData
+impl FromStr for MoveCommandData
 {
     type Err = NotationParseError;
 
