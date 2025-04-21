@@ -147,7 +147,7 @@ impl FromStr for MoveData
 
     fn from_str(s: &str) -> Result<Self, Self::Err>
     {
-        let re = RegexBuilder::new(r"(?<piece>[nbrqk]?)(?<discriminant>[a-z]*?[0-9]*?)(?<capture>x?)(?<destination>[a-z][0-9])")
+        let re = RegexBuilder::new(r"(?<piece>[nbrqk]?)(?<discriminant>[a-h]?[0-9]?)?(?<capture>x?)(?<destination>[a-h][0-9])")
             .case_insensitive(true)
             .build()
             .expect("Invalid regex");
@@ -296,7 +296,7 @@ mod tests
         assert_eq!(PieceType::Queen, move_data.piece_type);
         assert!(move_data.discriminant.is_some());
         assert!(!move_data.capture);
-        assert_eq!(Line::RankAndFile(7, 3), move_data.discriminant.unwrap());
+        assert_eq!(Line::RankAndFile(3, 7), move_data.discriminant.unwrap());
     }
 
     #[test]
@@ -308,7 +308,7 @@ mod tests
         assert_eq!(PieceType::Queen, move_data.piece_type);
         assert!(move_data.discriminant.is_some());
         assert!(move_data.capture);
-        assert_eq!(Line::RankAndFile(7, 3), move_data.discriminant.unwrap());
+        assert_eq!(Line::RankAndFile(3, 7), move_data.discriminant.unwrap());
     }
 }
 
