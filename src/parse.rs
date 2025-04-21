@@ -35,6 +35,7 @@
 //! - Sometimes checks and checkmate are given special symbols. These do not actually add
 //! additional information in determining the move made but are standard in chess notation anyways.
 //! They're not used or expected here however.
+//! - This library currently doesn't handle pawn promotions haha whoops, we'll add that later.
 //!
 //! # Examples
 //! You probably want to start by creating a [MoveCommand] from an algebraically notated string.
