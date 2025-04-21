@@ -149,7 +149,6 @@ impl Board {
     /// ```
     fn check_move(&self, attempted_move: Move) -> bool 
     {
-        todo!();
     }
 
     /// Consumes a move and returns a new board where the move has been made.
@@ -179,7 +178,9 @@ impl Board {
     /// ```
     fn make_move(&self, r#move: Move) -> Self
     {
-        todo!();
+        let mut new_board = self.clone();
+        new_board.make_move_in_place(r#move);
+        return new_board;
     }
 
     /// The in-place version of [Board::make_move]. 
@@ -200,7 +201,7 @@ impl Board {
     /// after [remove_piece].
     fn add_piece(&mut self, piece: Piece, position: &Square)
     {
-        todo!();
+        self.piece_mailbox.insert(*position, piece);
     }
 
     /// Erases a piece from the board.
@@ -212,7 +213,7 @@ impl Board {
     /// simply a move where there is no longer a piece on the starting square.
     fn remove_piece(&mut self, position: &Square)
     {
-        todo!();
+        self.piece_mailbox.remove(position);
     }
 }
 
