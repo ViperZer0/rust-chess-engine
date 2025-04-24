@@ -234,7 +234,7 @@ impl Display for Board
          */
         // Initial spacing for top left corner
         // Two spaces.
-        write!(f, "  ");
+        write!(f, "  ")?;
         let spacing = 4;
         // We map 0-8 to a-h for writing the files.
         for char in (0..8).map(|x| char::from_u32(x + 'a' as u32).expect(&format!("{} was not a valid character", x + 'a' as u32)))
@@ -242,7 +242,7 @@ impl Display for Board
             // Writes the file with a spacing of 3, with the file letter centered.
             write!(f, "{:^spacing$}", char, spacing=spacing)?;
         }
-        write!(f, "\n");
+        write!(f, "\n")?;
         // Now we can write the ranks, yay!!!
         for rank in (0..8).rev()
         {
@@ -260,7 +260,7 @@ impl Display for Board
                 };
             }
         }
-        todo!()
+        Ok(())
     }
 }
 
