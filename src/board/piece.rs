@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use super::{PieceType, PlayerColor};
 
 /// Represents one of the player's pieces.
@@ -19,5 +21,30 @@ impl Piece
             piece_type,
             color,
         }
+    }
+}
+
+impl Display for Piece
+{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        // White pieces show up as uppercase letters,
+        // Black pieces show up as lowercase letters,
+        // as in FEN.
+        let piece_symbol = match (self.color, self.piece_type)
+        {
+            (PlayerColor::White, PieceType::Pawn) => "P",
+            (PlayerColor::White, PieceType::Bishop) => "B",
+            (PlayerColor::White, PieceType::Knight) => "N",
+            (PlayerColor::White, PieceType::Rook) => "R",
+            (PlayerColor::White, PieceType::Queen) => "Q",
+            (PlayerColor::White, PieceType::King) => "K",
+            (PlayerColor::Black, PieceType::Pawn) => "p",
+            (PlayerColor::Black, PieceType::Bishop) => "b",
+            (PlayerColor::Black, PieceType::Knight) => "n",
+            (PlayerColor::Black, PieceType::Rook) => "r",
+            (PlayerColor::Black, PieceType::Queen) => "q",
+            (PlayerColor::Black, PieceType::King) => "k",
+        };
+        write!(f, "{}", piece_symbol)
     }
 }

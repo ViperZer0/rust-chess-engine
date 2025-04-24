@@ -55,7 +55,7 @@ mod error;
 
 // Re-exports
 pub use move_command::MoveCommand;
-pub use move_command::MoveData;
+pub use move_command::MoveCommandData;
 pub use error::NotationParseError;
 pub use coordinates::alphabetic_file_to_numeric;
 pub use coordinates::algebraic_to_square;

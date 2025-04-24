@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, fmt::{Display, Pointer}};
 
 use crate::parse::MoveCommand;
 
@@ -149,6 +149,7 @@ impl Board {
     /// ```
     fn check_move(&self, attempted_move: Move) -> bool 
     {
+        todo!()
     }
 
     /// Consumes a move and returns a new board where the move has been made.
@@ -214,6 +215,52 @@ impl Board {
     fn remove_piece(&mut self, position: &Square)
     {
         self.piece_mailbox.remove(position);
+    }
+}
+
+impl Display for Board
+{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        // Formats the board to look as follows:
+        /*    a  b  c  d  e  f  g  h 
+         * 8 [r][n][b][q][k][b][n][r]
+         * 7 [p][p][p][p][p][p][p][p]
+         * 6 [ ][ ][ ][ ][ ][ ][ ][ ]
+         * 5 [ ][ ][ ][ ][ ][ ][ ][ ]
+         * 4 [ ][ ][ ][ ][ ][ ][ ][ ]
+         * 3 [ ][ ][ ][ ][ ][ ][ ][ ]
+         * 2 [P][P][P][P][P][P][P][P]
+         * 1 [R][N][B][Q][K][B][N][R]
+         */
+        // Initial spacing for top left corner
+        // Two spaces.
+        write!(f, "  ");
+        let spacing = 4;
+        // We map 0-8 to a-h for writing the files.
+        for char in (0..8).map(|x| char::from_u32(x + 'a' as u32).expect(&format!("{} was not a valid character", x + 'a' as u32)))
+        {
+            // Writes the file with a spacing of 3, with the file letter centered.
+            write!(f, "{:^spacing$}", char, spacing=spacing)?;
+        }
+        write!(f, "\n");
+        // Now we can write the ranks, yay!!!
+        for rank in (0..8).rev()
+        {
+            // Prefix the line with the rank coordinates
+            write!(f, "{:<2}", rank + 1)?;
+            for file in 0..8
+            {
+                // Visit each square and print what piece is on that square, if any.
+                let square = Square::new(rank, file);
+                let piece = self.piece_mailbox.get(&square);
+                match piece
+                {
+                    Some(x) => write!(f, "[{}]", x)?,
+                    None => write!(f, "[ ]")?,
+                };
+            }
+        }
+        todo!()
     }
 }
 
@@ -402,5 +449,23 @@ mod tests
             assert!(result.is_some());
             assert_eq!(piece, *result.unwrap());
         }
+    }
+
+    #[test]
+    fn display_default_starting_board_string()
+    {
+        let default_board_str = 
+        "   a  b  c  d  e  f  g  h \n\
+         8 [r][n][b][q][k][b][n][r]\n\
+         7 [p][p][p][p][p][p][p][p]\n\
+         6 [ ][ ][ ][ ][ ][ ][ ][ ]\n\
+         5 [ ][ ][ ][ ][ ][ ][ ][ ]\n\
+         4 [ ][ ][ ][ ][ ][ ][ ][ ]\n\
+         3 [ ][ ][ ][ ][ ][ ][ ][ ]\n\
+         2 [P][P][P][P][P][P][P][P]\n\
+         1 [R][N][B][Q][K][B][N][R]\n";
+        let board = Board::new_default_starting_board();
+
+        assert_eq!(default_board_str, format!("{}", board));
     }
 }
