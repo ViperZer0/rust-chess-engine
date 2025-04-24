@@ -357,6 +357,120 @@ impl FromStr for CastlingAvailability
     }
 }
 
+/// Helper builder for constructing a [BoardConfiguration], since they have a lot of information
+/// included with them.
+///
+/// You may be interested in more easily constructing a [BoardConfiguration] directly using
+/// something like [BoardConfiguration::from_str] with FEN or [BoardConfiguration::default].
+///
+/// This builder is more appropriate for building up heavily customized boards programatically.
+#[derive(Default)]
+pub struct BoardConfigurationBuilder
+{
+    pieces: Option<HashMap<Square, Piece>>,
+    active_color: Option<PlayerColor>,
+    castling_availability: Option<CastlingAvailability>,
+    en_passant_target_square: Option<Square>,
+    halfmove_clock: Option<u8>,
+    fullmove_number: Option<u8>,
+}
+
+impl BoardConfigurationBuilder
+{
+    /// Sets the list of pieces included with the board.
+    ///
+    /// This will replace any previously added pieces, creating an entirely new map of pieces.
+    /// The input is a [HashMap] of [Square] to [Piece], where each [Piece] is located on the given
+    /// [Square] on the board.
+    ///
+    /// This method is optional, as is [Self::add_piece], and will default to a blank board if no
+    /// pieces are specified.
+    pub fn set_pieces(mut self, pieces: HashMap<Square, Piece>) -> Self
+    {
+        // Get existing hashmap or create a new one
+        self.pieces = Some(pieces);
+        self
+    }
+
+    /// Adds a new piece to the list of pieces on the board.
+    ///
+    /// This will add to the existing set of pieces, unlike [Self::set_pieces]. If a square
+    /// currently has a piece on it, it will be replaced with the new provided piece.
+    /// 
+    /// This method is optional, as is [Self::set_pieces], and will default to a blank board if no
+    /// pieces are specified.
+    pub fn add_piece(mut self, piece: Piece, square: Square) -> Self
+    {
+        // Construct new hashmap if one doesn't exist yet.
+        let mut hashmap = self.pieces.get_or_insert_with(|| HashMap::new());
+        // Add the new piece
+        hashmap.insert(square, piece);
+        self
+    }
+
+    /// Sets the active player's turn.
+    ///
+    /// This method is optional, if a [BoardConfiguration] is built without this being set it will
+    /// default to [PlayerColor::White].
+    pub fn set_active_color(mut self, color: PlayerColor) -> Self
+    {
+        self.active_color = Some(color);
+        self
+    }
+
+    /// Sets what directions are available for each player to castle in.
+    ///
+    /// If this method is not called, it will default to having both queenside and kingside castles
+    /// available to both black and white.
+    pub fn set_castling_availability(mut self, castling_availability: CastlingAvailability) -> Self
+    {
+        self.castling_availability = Some(castling_availability);
+        self
+    }
+
+    /// Sets whether or not a previous move made it possible to capture en passant.
+    ///
+    /// If this method is not called, it will default to no en passant being available.
+    pub fn set_en_passant_target_square(mut self, square: Square) -> Self
+    {
+        self.en_passant_target_square = Some(square);
+        self
+    }
+
+    /// Sets how many moves (from either player) have passed since the last capture or pawn
+    /// advance.
+    ///
+    /// If this method is not called, it will default to 0.
+    pub fn set_halfmove_clock(mut self, halfmove_clock: u8) -> Self
+    {
+        self.halfmove_clock = Some(halfmove_clock);
+        self
+    }
+
+    /// Sets how many total moves (1 for each 2 turns).
+    ///
+    /// Defaults to 1.
+    pub fn set_fullmove_number(mut self, fullmove_number: u8) -> Self
+    {
+        self.fullmove_number = Some(fullmove_number);
+        self
+    }
+
+    /// Builds a new [BoardConfiguration] given the provided parameters.
+    pub fn build(&self) -> BoardConfiguration
+    {
+        BoardConfiguration { 
+            pieces: self.pieces.unwrap_or_else(|| HashMap::new()),
+            active_color: self.active_color.unwrap_or(PlayerColor::White),
+            castling_availability: self.castling_availability.unwrap_or_else(|| CastlingAvailability::new(true, true, true, true)),
+            en_passant_target_square: self.en_passant_target_square,
+            halfmove_clock: self.halfmove_clock.unwrap_or(0),
+            fullmove_number: self.fullmove_number.unwrap_or(1)
+        }
+    }
+}
+
+
 #[cfg(test)]
 mod tests
 {

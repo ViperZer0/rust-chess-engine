@@ -2,7 +2,7 @@ use std::{collections::HashMap, fmt::{Display, Pointer}};
 
 use crate::parse::MoveCommand;
 
-use super::{error::MoveError, r#move::Move, BoardConfiguration, BoardResult, Piece, Square};
+use super::{board_config::BoardConfigurationBuilder, error::MoveError, r#move::Move, BoardConfiguration, BoardResult, CastlingAvailability, Piece, Square};
 
 /// A given board state.
 ///
@@ -26,7 +26,11 @@ impl Board {
     /// pawns, 8 per side, 4 knights, 4 rooks, etc.
     pub fn new_default_starting_board() -> Self
     {
-        todo!();
+        // Not sure if the board should rely on the default constructor for the
+        // BoardConfiguration?
+        // 
+        // This is probably correct and valid?
+        Self::new_board_with_configuration(&BoardConfiguration::default())
     }
 
     /// Creates a new empty board.
@@ -34,7 +38,10 @@ impl Board {
     /// This board has no pieces on it.
     pub fn new_blank_board() -> Self
     {
-        todo!();
+        // Unlike BoardConfig, a default BoardConfigurationBuilder is all blank.
+        let board_config_builder = BoardConfigurationBuilder::default();
+        let board_config = board_config_builder.build();
+        Self::new_board_with_configuration(&board_config)
     }
 
     /// Allows creation of a new board with a custom configuration.
