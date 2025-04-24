@@ -20,8 +20,13 @@
 /// - Whether the king is in check
 pub enum Move
 {
+    /// Basically any move that is not a castle.
+    ///
+    /// (Also probably won't include pawn promotions, which are currently unhandled)
     NormalMove(MoveData),
+    /// A kingside castle.
     KingsideCastle,
+    /// A queenside castle.
     QueensideCastle,
 }
 
