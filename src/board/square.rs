@@ -50,7 +50,7 @@ impl FromStr for Square
     type Err = NotationParseError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let re = Regex::new(r"([a-zA-Z]+)([0-9]+)").unwrap();
+        let re = Regex::new(r"^([a-zA-Z]+)([0-9]+)$").unwrap();
         let captures = re.captures(s);
         if captures.is_none()
         {
