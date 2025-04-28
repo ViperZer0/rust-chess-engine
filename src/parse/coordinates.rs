@@ -127,7 +127,7 @@ pub fn alphabetic_file_to_numeric(alphabetic_file: &str) -> Result<UInt, Notatio
 }
 
 /// Converts a rank as a string into a rank as a number. Ranks are already numeric so this is just
-/// a very thin wrapper around [str::Parse]. As noted in [alphabetic_file_to_numeric], a rank
+/// a very thin wrapper around [str::parse()]. As noted in [alphabetic_file_to_numeric], a rank
 /// of 1 represents a coordinate with an index of 0, so passing "0" into this function is actually
 /// an error and will return as such.
 pub fn rank_to_numeric(rank_str: &str) -> Result<UInt, NotationParseError>

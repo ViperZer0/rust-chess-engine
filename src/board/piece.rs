@@ -14,6 +14,18 @@ pub struct Piece
 
 impl Piece
 {
+    /// Creates a new [Piece]
+    ///
+    /// # Arguments
+    ///
+    /// * `color` - The color of the piece
+    /// * `piece_type` - The type of piece.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let piece = Piece::new(PlayerColor::White, PieceType::Pawn);
+    /// ```
     pub fn new(color: PlayerColor, piece_type: PieceType) -> Self
     {
         Self 

@@ -14,7 +14,7 @@ pub enum GetWinnerError
     Draw(DrawReason),
 }
 
-/// The current game outcome. A game still in progress is [InProgress],
+/// The current game outcome. A game still in progress is [BoardResult::InProgress],
 /// while a game that has ended will have one of various enum values recording the game outcome,
 /// whether it was a victory for one of the players or one of various draw conditions.
 pub enum BoardResult

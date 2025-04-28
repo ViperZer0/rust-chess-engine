@@ -78,7 +78,7 @@ impl MoveCommand
     }
 
     /// Returns [Some] containing a [MoveCommandData] if this move is a normal move.
-    /// If this move is a castle, it has no associated [MoveData] so returns [None].
+    /// If this move is a castle, it has no associated [MoveCommandData] so returns [None].
     pub fn get_move_data(&self) -> Option<MoveCommandData>
     {
         match self

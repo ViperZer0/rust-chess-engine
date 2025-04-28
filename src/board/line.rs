@@ -8,7 +8,7 @@ use crate::{parse::{alphabetic_file_to_numeric, rank_to_numeric, NotationParseEr
 
 /// A [Line] represents a specific rank, file, or both (i.e a square.)
 ///
-/// It is used as the discriminant for [crate::parse::MoveData] when
+/// It is used as the discriminant for [crate::parse::MoveCommandData] when
 /// more than one identical piece could reach the same destination square.
 /// In chess, when this happens, we use either the rank or file to distinguish between them.
 /// In exceedingly rare situations we may require both the rank and file to fully distinguish

@@ -41,7 +41,7 @@ pub struct BoardConfiguration
 /// Note that this doesn't include information on *temporary* scenarios in which castling are
 /// prevented. If castling would put the king in check, the option is still available to the king
 /// later.
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct CastlingAvailability
 {
     white_castle_kingside: bool,
@@ -108,6 +108,10 @@ impl BoardConfiguration
     ///
     /// You can totally make a board with no kings, and that's on you.
     ///
+    /// This method is extremely verbose and requires every argument to be specified.
+    /// If you want to use unspecified default arguments, consider creating a [BoardConfiguration]
+    /// from a [BoardConfigurationBuilder] instead.
+    ///
     /// # Arguments
     ///
     /// * `pieces` - The hashmap of pieces. The keys are the squares which the pieces occupy, and
@@ -121,7 +125,10 @@ impl BoardConfiguration
     /// # Examples
     ///
     /// ```
-    /// [TODO:write some example code]
+    /// // This is more or less the bare minimum arguments to create a board configuration.
+    /// // As mentioned above, you may want to consider BoardConfigurationBuilder instead.
+    /// let board_config = BoardConfiguration::new(HashMap::new(), PlayerColor::White,
+    /// CastlingAvailability::default(), None, 0, 1);
     /// ```
     pub fn new(pieces: HashMap<Square, Piece>, active_color: PlayerColor, castling_availability: CastlingAvailability, en_passant_target_square: Option<Square>, halfmove_clock: u8, fullmove_number: u8) -> Self
     {
@@ -147,6 +154,15 @@ impl Display for BoardConfiguration
 
 impl Default for BoardConfiguration
 {
+    /// Creates a [BoardConfiguration] with the "standard" chess configuration:
+    /// i.e 16 pieces on each side, 8 pawns, 2 rooks, knights, bishops, one queen and king.
+    /// 
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let board_config = BoardConfiguration::default();
+    /// ```
     fn default() -> Self {
         Self::from_str("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1").expect("The provided default board configuration was invalid.")
     }
@@ -156,26 +172,37 @@ impl Default for BoardConfiguration
 #[derive(Debug, Error)]
 pub enum InvalidFENError
 {
+    /// This error variant is returned when the FEN record is missing a required section.
     #[error("Missing field {0} from FEN notated string {1}")]
     MissingFENSection(u8, String),
+    /// This error variant is returned when the first field (piece placement data) of a FEN has too few ranks specified.
     #[error("The FEN notated string {0} had too few specified ranks!")]
     TooFewRanks(String),
+    /// This error variant is returned when the first field (piece placement data) of a FEN has too many ranks specified.
     #[error("The FEN notated string {1} had too many specified ranks! (Remainder: {0})")]
     TooManyRanks(String, String),
+    /// This error variant is returned when the first field (piece placement data) of a FEN has too few files specified.
     #[error("There were too few files ({1} < 7) on rank {0} in the FEN record {2}")]
     TooFewFiles(u8, u8, String),
+    /// This error variant is returned when the first field (piece placement data) of a FEN has too many files specified.
     #[error("There were too many files ({1} >= 8) on rank {0} in the FEN record {2}")]
     TooManyFiles(u8, u8, String),
+    /// This error variant is returned when the first field (piece placement data) of a FEN has an invalid character.
     #[error("An invalid character for a piece type was provided: {0} in {1}")]
     InvalidPieceCharacter(String, String),
-    #[error("{0} was not a valid character for the turn order in the string {1}")]
+    /// This error variant is returned when the second field (active color) of a FEN has an invalid character.
+    #[error("{0} was not a valid character for the active color in the string {1}")]
     InvalidTurnCharacter(String, String),
+    /// This error variant is returned when the third field (castling availability) of a FEN has an invalid character.
     #[error("Invalid castling character {0} in FEN string {1}")]
     InvalidCastlingCharacter(String, String),
+    /// This error variant is returned when the fourth field (en passant target square) of a FEN has an invalid character.
     #[error("Invalid en passant target square notation {0} in FEN string {1}")]
     InvalidEnPassantTargetSquare(String, String),
+    /// This error variant is returned when the fifth field (halfmove clock) of a FEN has an invalid character, or isn't a number.
     #[error("Halfmove clock field was not a number: {0}")]
     InvalidHalfMoveClock(String),
+    /// This error variant is returned when the sixth field (fullmove number) of a FEN has an invalid character, or isn't a number.
     #[error("Fullmove number field was not a number: {0}")]
     InvalidFullMoveNumber(String)
 }
@@ -333,6 +360,51 @@ impl FromStr for CastlingAvailability
 {
     type Err = InvalidFENError;
 
+    /// Parses the part of the
+    /// [FEN](https://en.wikipedia.org/wiki/Forsyth%E2%80%93Edwards_Notation) responsible
+    /// for determining castling availability. The short of it is:
+    ///
+    /// - K means White can castle kingside
+    /// - Q means White can castle queenside
+    /// - k means Black can castle kingside
+    /// - q means Black can castle kingside
+    /// - "-" means no one can castle.
+    ///
+    /// So on a new board where everybody can castle, the input string to this method would be
+    /// KQkq.
+    ///
+    /// If Black has castled kingside, and White has moved their kingside rook (so they can only
+    /// castle queenside), the string would be Q.
+    ///
+    /// If no one can castle, this field is just given as "-".
+    ///
+    /// Techincally this method internally just discards "-", so KQkq- is still valid and will be
+    /// treated the same as KQkq, but this is not guaranteed to work now or in the future, so avoid
+    /// creating FEN records with atypical syntax.
+    ///
+    /// This method is primarily intended to be called from [BoardConfiguration::from_str]. See
+    /// that method for parsing the entire FEN.
+    ///
+    /// # Arguments
+    ///
+    /// * `s` - The input string, see above for the specific notation to use.
+    ///
+    /// # Errors
+    ///
+    /// This method returns an [InvalidFENError::InvalidCastlingCharacter] if a character in
+    /// the input string is not one of {K, Q, k, q, -}.
+    ///
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// // Default castling availability
+    /// let castling_availability = CastlingAvailability::from_str("KQkq");
+    /// // White has castled, Black has not.
+    /// let castling_availability = CastlingAvailability::from_str("kq");
+    /// // No one can castle.
+    /// let castling_availability = CastlingAvailability::from_str("-");
+    /// ```
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let mut white_castle_kingside: bool = false;
         let mut white_castle_queenside: bool = false;
@@ -364,7 +436,7 @@ impl FromStr for CastlingAvailability
 /// something like [BoardConfiguration::from_str] with FEN or [BoardConfiguration::default].
 ///
 /// This builder is more appropriate for building up heavily customized boards programatically.
-#[derive(Default)]
+#[derive(Default, Clone)]
 pub struct BoardConfigurationBuilder
 {
     pieces: Option<HashMap<Square, Piece>>,
@@ -457,7 +529,10 @@ impl BoardConfigurationBuilder
     }
 
     /// Builds a new [BoardConfiguration] given the provided parameters.
-    pub fn build(&self) -> BoardConfiguration
+    ///
+    /// This will consume the BoardConfigurationBuilder, since the [BoardConfiguration]
+    /// will take ownership of the underlying HashMap storing the arrangement of pieces.
+    pub fn build(self) -> BoardConfiguration
     {
         BoardConfiguration { 
             pieces: self.pieces.unwrap_or_else(|| HashMap::new()),
