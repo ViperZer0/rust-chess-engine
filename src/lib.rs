@@ -4,6 +4,7 @@
 //! More documentation here???
 pub mod parse;
 pub mod board;
+pub mod bitboard;
 
 /// Defines the size of unsigned integers used to store and calculate square coordinates.
 /// a 8x8 grid of squares can be described using only u8s, but in theory if we were to use larger

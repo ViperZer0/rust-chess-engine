@@ -1,8 +1,8 @@
-use std::{collections::HashMap, fmt::{Display, Pointer}};
+use std::{collections::HashMap, fmt::Display};
 
 use crate::parse::MoveCommand;
 
-use super::{board_config::BoardConfigurationBuilder, error::MoveError, r#move::Move, BoardConfiguration, BoardResult, CastlingAvailability, Piece, Square};
+use super::{board_config::BoardConfigurationBuilder, error::MoveError, r#move::Move, BoardConfiguration, BoardResult, Piece, Square};
 
 /// A given board state.
 ///
