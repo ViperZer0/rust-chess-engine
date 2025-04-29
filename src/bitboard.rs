@@ -46,6 +46,7 @@
 
 use std::fmt::Display;
 
+use derive_more::{Add, AddAssign, BitAnd, BitAndAssign, BitOr, BitOrAssign, BitXor, BitXorAssign, From, Into, Mul, MulAssign};
 use thiserror::Error;
 
 use crate::board::Square;
@@ -133,11 +134,27 @@ impl Display for OutOfBoundsTypeError
 }
 
 /// See the module-level documentation for more information.
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, From, Add, Mul, Into, AddAssign, MulAssign, BitOrAssign, BitOr, BitAndAssign, BitAnd, BitXor, BitXorAssign, Default)]
 pub struct Bitboard(u64);
 
 impl Bitboard
 {
+    /// Returns a new bitboard with the corresponding 64 bit integer representation.
+    ///
+    /// # Arguments
+    /// 
+    /// * `input` - The 64 bit representation this integer should represent.
+    /// # Examples
+    ///
+    /// ```
+    /// let bitboard = Bitboard::new(0);
+    /// assert_eq!(0, bitboard.into());
+    /// ```
+    pub fn new(input: u64) -> Self
+    {
+        Self(input)
+    }
+
     /// Converts a 2D set of coordinates to a 1D index in the bitboard "array".
     ///
     /// # Arguments
@@ -215,6 +232,95 @@ impl Bitboard
         // this is equivalent to
         // (index / 8, index % 8)
         Ok(Square::new(index >> 3, index & 7))
+    }
+
+    /// Generates a bitmask that has only one rank of 8 bits set to 1,
+    /// all other cells are set to 0.
+    ///
+    /// # Arguments
+    ///
+    /// * `rank` - The rank (from 0-7) to expose
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// assert_eq!(0b11111111, Bitboard::rank_mask(0));
+    /// assert_eq!(0b1111111100000000, Bitboard::rank_mask(1));
+    /// assert_eq!(0b111111110000000000000000, Bitboard::rank_mask(2));
+    /// ```
+    pub fn rank_mask(rank: u8) -> Self
+    {
+        Bitboard::new(0b11111111 << (rank * 8))
+    }
+
+    /// Generates a bitmask that has only one file of 8 bits set to 1.
+    /// all other cells are set to 0.
+    ///
+    /// # Layout
+    ///
+    /// See the module-level documentation for more information on how a 1D, 64-bit integer
+    /// represents a 2D chess board. The TL:DR is;
+    /// - Each consecutive set of 8 bits represents one row or *rank* of squares.
+    /// - Thus, every 8 bits represents a set of squares on the same *file*.
+    /// - The LSB is defined as a1. Then b1, c1, etc.
+    ///
+    /// This can cause some confusion as a 64 bit integer is represented in code
+    /// from MSB to LSB going left to right, but the LSB is the leftmost, bottommost square
+    /// on a White-oriented chess board.
+    ///
+    /// This means that for file 0 ("a"), the integers bit representation looks like this:
+    ///
+    /// 00000001
+    /// 00000001
+    /// 00000001
+    /// 00000001
+    /// 00000001
+    /// 00000001
+    /// 00000001
+    /// => 0b00000001000000010000000100000001000000010000000100000001
+    ///
+    /// For file 7 ("f"), the bit representation is
+    /// 10000000
+    /// 10000000
+    /// 10000000
+    /// 10000000
+    /// 10000000
+    /// 10000000
+    /// 10000000
+    /// => 0b10000000100000001000000010000000100000001000000010000000
+    ///
+    /// # Arguments
+    ///
+    /// * `file` - The file to set the bitmask to.
+    ///
+    /// # Panics
+    ///
+    /// This function panics if the file is greater than 8.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// assert_eq!(0x0101010101010101, Bitboard::file_mask(0));
+    /// assert_eq!(0x0202020202020202, Bitboard::file_mask(1));
+    /// assert_eq!(0x0404040404040404, Bitboard::file_mask(2));
+    /// ```
+    pub fn file_mask(file: u8) -> Self
+    {
+        // Yes, this is super hacky, it doesn't look great,
+        // but it's about 10x faster than doing a for loop.
+        // Yes, this is absolutely premature optimization, but I had fun with it so.
+        Bitboard::new(match file
+        {
+            0 => 0b0000000100000001000000010000000100000001000000010000000100000001,
+            1 => 0b0000001000000010000000100000001000000010000000100000001000000010,
+            2 => 0b0000010000000100000001000000010000000100000001000000010000000100,
+            3 => 0b0000100000001000000010000000100000001000000010000000100000001000,
+            4 => 0b0001000000010000000100000001000000010000000100000001000000010000,
+            5 => 0b0010000000100000001000000010000000100000001000000010000000100000,
+            6 => 0b0100000001000000010000000100000001000000010000000100000001000000,
+            7 => 0b1000000010000000100000001000000010000000100000001000000010000000,
+            _ => panic!("Expected 0-7"),
+        })
     }
 }
 
@@ -294,6 +400,7 @@ mod tests
         assert_eq!(result.unwrap(), Square::new(0, 0));
     }
 
+    #[test]
     fn test_normal_index_2()
     {
         let result = Bitboard::try_index_to_coords(3);
@@ -301,11 +408,76 @@ mod tests
         assert_eq!(result.unwrap(), Square::new(0, 3));
     }
 
+    #[test]
     fn test_normal_index_3()
     {
         let result = Bitboard::try_index_to_coords(10);
         assert!(result.is_ok());
         assert_eq!(result.unwrap(), Square::new(1, 2));
+    }
+
+    #[test]
+    fn test_rank_mask()
+    {
+        let outputs = [0b11111111,
+                       0b1111111100000000,
+                       0b111111110000000000000000,
+                       0b11111111000000000000000000000000,
+                       0b1111111100000000000000000000000000000000,
+                       0b111111110000000000000000000000000000000000000000,
+                       0b11111111000000000000000000000000000000000000000000000000,
+                       0b1111111100000000000000000000000000000000000000000000000000000000
+        ];
+
+        for rank in 0..8
+        {
+            assert_eq!(Bitboard::rank_mask(rank).0, outputs[rank as usize]);
+        }
+    }
+
+    #[test]
+    fn test_file_mask()
+    {
+        let outputs = [0x0101010101010101,
+                       0x0202020202020202,
+                       0x0404040404040404,
+                       0x0808080808080808,
+                       0x1010101010101010,
+                       0x2020202020202020,
+                       0x4040404040404040,
+                       0x8080808080808080
+        ];
+
+        for file in 0..8
+        {
+            assert_eq!(Bitboard::file_mask(file).0, outputs[file as usize]);
+        }
+    }
+
+    #[test]
+    fn test_rank_mask_bitor_all_ranks()
+    {
+        let mut bitboard: Bitboard = Bitboard::new(0);
+
+        for rank in 0..8
+        {
+            bitboard |= Bitboard::rank_mask(rank);
+        }
+
+        assert_eq!(bitboard.0, u64::MAX);
+    }
+
+    #[test]
+    fn test_file_mask_bitor_all_ranks()
+    {
+        let mut bitboard = Bitboard::new(0);
+
+        for file in 0..8
+        {
+            bitboard |= Bitboard::file_mask(file);
+        }
+
+        assert_eq!(bitboard.0, u64::MAX);
     }
 }
 

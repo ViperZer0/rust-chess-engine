@@ -10,7 +10,7 @@ env_logger = "0.11.8"
 log = "0.4.27"
 regex = "1.11.1"
 thiserror = "2.0.12"
-derive_more = { version = "2", features = ["from", "add", "mul"] }
+derive_more = { version = "2", features = ["from", "add", "mul", "into", "add_assign", "mul_assign"] }
 
 [dev-dependencies]
 criterion = { version = "0.4", features = ["html_reports"] }
