@@ -46,11 +46,13 @@
 
 use std::fmt::Display;
 
-use derive_more::{Add, AddAssign, BitAnd, BitAndAssign, BitOr, BitOrAssign, BitXor, BitXorAssign, From, Into, Mul, MulAssign};
+use bitboard_square_iterator::BitboardSquareIterator;
+use derive_more::{Add, AddAssign, BitAnd, BitAndAssign, BitOr, BitOrAssign, BitXor, BitXorAssign, From, Into, Mul, MulAssign, Shl, ShlAssign, Shr, ShrAssign};
 use thiserror::Error;
 
 use crate::board::Square;
 
+mod bitboard_square_iterator;
 
 /// The error type passed by a bitboard when invalid coordinates were used.
 ///
@@ -134,7 +136,7 @@ impl Display for OutOfBoundsTypeError
 }
 
 /// See the module-level documentation for more information.
-#[derive(Debug, Clone, Copy, From, Add, Mul, Into, AddAssign, MulAssign, BitOrAssign, BitOr, BitAndAssign, BitAnd, BitXor, BitXorAssign, Default)]
+#[derive(Debug, Clone, Copy, From, Add, Mul, Into, AddAssign, MulAssign, BitOrAssign, BitOr, BitAndAssign, BitAnd, BitXor, BitXorAssign, Default, Shl, Shr, ShlAssign, ShrAssign)]
 pub struct Bitboard(u64);
 
 impl Bitboard
@@ -237,6 +239,10 @@ impl Bitboard
     /// Generates a bitmask that has only one rank of 8 bits set to 1,
     /// all other cells are set to 0.
     ///
+    /// # Panics
+    ///
+    /// This function panics if `rank >= 8`.
+    ///
     /// # Arguments
     ///
     /// * `rank` - The rank (from 0-7) to expose
@@ -250,7 +256,31 @@ impl Bitboard
     /// ```
     pub fn rank_mask(rank: u8) -> Self
     {
+        assert!(rank < 8, "Error: Rank provided was greater than or equal to 8.");
         Bitboard::new(0b11111111 << (rank * 8))
+    }
+
+    /// Similar to [Self::rank_mask] but accepts an iterator over multiple ranks,
+    /// returning the OR sum of all the ranks specified.
+    ///
+    /// # Panics
+    /// This function panics if any of the values are `>= 8`.
+    ///
+    /// # Arguments
+    ///
+    /// * `rank_iter` - Anything that implements [`IntoIterator<Item = u8>`].
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// assert_eq!(0b11111111, Bitboard::rank_mask_range(0..1));
+    /// assert_eq!(0b11111111111111111, Bitboard::rank_mask_range(0..2));
+    /// assert_eq!(0b1111111111111111100000000, Bitboard:rank_mask_range(1..3));
+    /// ```
+    pub fn rank_mask_iter<I>(rank_iter: I) -> Self
+    where I: IntoIterator<Item = u8>
+    {
+        rank_iter.into_iter().map(Self::rank_mask).fold(Bitboard::default(), |acc, v| acc | v)
     }
 
     /// Generates a bitmask that has only one file of 8 bits set to 1.
@@ -295,7 +325,7 @@ impl Bitboard
     ///
     /// # Panics
     ///
-    /// This function panics if the file is greater than 8.
+    /// This function panics if `file >= 8`
     ///
     /// # Examples
     ///
@@ -321,6 +351,53 @@ impl Bitboard
             7 => 0b1000000010000000100000001000000010000000100000001000000010000000,
             _ => panic!("Expected 0-7"),
         })
+    }
+
+    /// Same as [Self::file_mask] but accepts anything that implements [`IntoIterator<Item = u8>`],
+    /// allowing this function to work over a range of files.
+    ///
+    /// The file masks will be OR summed together.
+    ///
+    /// # Panics
+    ///
+    /// This function panics if any of the files are greater than 8.
+    ///
+    /// # Arguments
+    ///
+    /// * `files` - Anything that implements [`IntoIterator<Item=u8>`],
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// assert_eq!(0x0101010101010101, Bitboard::file_mask_iter(0..1));
+    /// assert_eq!(0x0303030303030303, Bitboard::file_mask_iter(0..2));
+    /// assert_eq!(0x0606060606060606, Bitboard::file_mask_iter(1..2));
+    /// ```
+    pub fn file_mask_iter<I>(files: I) -> Self
+    where I: IntoIterator<Item = u8>
+    {
+        files.into_iter().map(Self::file_mask).fold(Self::default(), |acc, v| acc | v)
+    }
+
+    /// Returns an iterator over the current bitboard. This iterator
+    /// passes through the bitboard from LSB to MSB, finds each currently active 1 bit,
+    /// and returns the Square that that bit represents.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// // All bits set to 0.
+    /// let bitboard = Bitboard::new(0);
+    /// let squares: Vec<Square> = bitboard.squares().collect();
+    /// assert!(squares.is_empty());
+    /// // All bits set to 1.
+    /// let bitboard = Bitboard::new(u64::MAX);
+    /// let squares: Vec<Square> = bitboard.squares().collect();
+    /// assert_eq!(squares.len(), 64);
+    /// ```
+    pub fn squares(&self) -> BitboardSquareIterator
+    {
+        BitboardSquareIterator::new(&self)
     }
 }
 
@@ -478,6 +555,18 @@ mod tests
         }
 
         assert_eq!(bitboard.0, u64::MAX);
+    }
+
+    #[test]
+    fn test_rank_mask_range_bitor_all_ranks()
+    {
+        assert_eq!(Bitboard::rank_mask_iter(0..8).0, u64::MAX);
+    }
+
+    #[test]
+    fn test_file_mask_range_bitor_all_ranks()
+    {
+        assert_eq!(Bitboard::file_mask_iter(0..8).0, u64::MAX);
     }
 }
 
