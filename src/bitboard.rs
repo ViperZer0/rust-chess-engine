@@ -189,7 +189,7 @@ impl Display for OutOfBoundsTypeError
 }
 
 /// See the [module-level documentation](./index.html) for more information on bitboards in general.
-#[derive(Debug, Clone, Copy, From, Add, Mul, Into, AddAssign, MulAssign, BitOrAssign, BitOr, BitAndAssign, BitAnd, BitXor, BitXorAssign, Default, Shl, Shr, ShlAssign, ShrAssign)]
+#[derive(Debug, Clone, Copy, From, Add, Mul, Into, AddAssign, MulAssign, BitOrAssign, BitOr, BitAndAssign, BitAnd, BitXor, BitXorAssign, Default, Shl, Shr, ShlAssign, ShrAssign, PartialEq)]
 pub struct Bitboard(u64);
 
 impl Bitboard
@@ -421,6 +421,32 @@ impl Bitboard
     pub fn squares(&self) -> BitboardSquareIterator
     {
         BitboardSquareIterator::new(&self)
+    }
+}
+
+impl From<Square> for Bitboard
+{
+    /// Converts a [Square] into a [Bitboard] where all bits are set to 0
+    /// except the bit representing the given square.
+    ///
+    /// # Arguments
+    ///
+    /// * `value` - The square to enable the mask for.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let bitboard: Bitboard = Square::new(0,0).into();
+    /// // Bitboard representation: 0b0000...001
+    /// assert_eq!(Bitboard::new(1), bitboard);
+    ///
+    /// let bitboard = Bitboard::from(Square::new(7,7));
+    /// assert_eq!(Bitboard::new(0x8000_0000_0000_0000), bitboard);
+    /// ```
+    fn from(value: Square) -> Self {
+        // Converts an index (i.e "the 12th bit")
+        // to the number whose index is set to 1 (i.e the 12th bit is 1, all others are 0)
+        Bitboard::new(2_u64.pow(Bitboard::coords_to_index(value).into()))
     }
 }
 
