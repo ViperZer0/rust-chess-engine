@@ -1,9 +1,10 @@
 use std::{collections::HashMap, fmt::Display};
 
-use crate::parse::MoveCommand;
+use crate::{bitboard::Bitboard, parse::MoveCommand};
 
 use super::{board_config::BoardConfigurationBuilder, error::MoveError, r#move::Move, BoardConfiguration, BoardResult, Piece, Square};
 mod board_moves;
+mod board_queries;
 
 /// A given board state.
 ///
@@ -17,7 +18,21 @@ pub struct Board
 {
     /// Tracks what piece is on a given square.
     /// If a key does not exist, that square is considered empty.
-    piece_mailbox: HashMap<Square, Piece>
+    piece_mailbox: HashMap<Square, Piece>,
+    /// All white pieces
+    white_pieces: Bitboard,
+    /// All black pieces
+    black_pieces: Bitboard,
+
+    // These hold *all* pieces of the given type, for each color.
+    // To get a specific color's pieces, use the AND of color_pieces and type_pieces,
+    // i.e to get the white king: `white_pieces & king_pieces`.
+    king_pieces: Bitboard,
+    queen_pieces: Bitboard,
+    rook_pieces: Bitboard,
+    knight_pieces: Bitboard,
+    bishop_pieces: Bitboard,
+    pawn_pieces: Bitboard,
 }
 
 impl Board {
