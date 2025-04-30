@@ -73,6 +73,9 @@ impl Board {
     ///
     /// This is typically the 8 surrounding squares, unless it's on a corner or edge.
     ///
+    /// Note that this does NOT check whether this places the king in check, nor does it check for
+    /// occupancy or overlapping squares! But maybe it should... hmm...
+    ///
     /// # Arguments
     ///
     /// * `from` - The square the king is currently on.
@@ -87,9 +90,163 @@ impl Board {
     /// ```
     fn king_moves(from: Square) -> Bitboard
     {
-        todo!()
+        let king_on_rank_1_or_higher = Bitboard::from(from) & Bitboard::rank_mask_iter(1..8);
+        let king_on_rank_6_or_lower = Bitboard::from(from) & Bitboard::rank_mask_iter(0..7);
+        let king_on_file_b_to_h = Bitboard::from(from) & Bitboard::file_mask_iter(1..8);
+        let king_on_file_a_to_g = Bitboard::from(from) & Bitboard::file_mask_iter(0..7);
+
+        let north_east = (king_on_rank_6_or_lower & king_on_file_a_to_g) << 9;
+        let north = (king_on_rank_6_or_lower) << 8;
+        let north_west = (king_on_rank_6_or_lower & king_on_file_b_to_h) << 7;
+        let east = (king_on_file_a_to_g) << 1;
+        let west = (king_on_file_b_to_h) >> 1;
+        let south_east = (king_on_rank_1_or_higher & king_on_file_a_to_g) >> 7;
+        let south = (king_on_rank_1_or_higher) >> 8;
+        let south_west = (king_on_rank_1_or_higher & king_on_file_b_to_h) >> 9;
+
+        Bitboard::default() 
+            | north_east
+            | north
+            | north_west
+            | east
+            | west
+            | south_east
+            | south
+            | south_west
     }
 }
+
+
+/// Represents one of 8 directions that rooks/queens/bishops can move in. Used for
+/// occupancy/movement checks. 
+///
+/// We use a u8 internally bc Rust isn't actually smart enough to know that there are only 8
+/// possible directions when using a tuple, so we map those 8 possible directions to a u8.
+struct Direction(u8);
+
+impl Direction
+{
+    /// Creates a new direction from the two components/basis of the direction space.
+    ///
+    /// Note that the magnitude of the direction vector cannot be 0, so `Direction::new(0, 0)` is
+    /// invalid.
+    ///
+    /// # Arguments
+    ///
+    /// * `vertical_direction` - The vertical component. Can be -1, 0 (unless horizontal_direction is also 0), or 1 
+    /// * `horizontal_direction` - The horizontal component. Can be -1, 0 (unless vertical_direction is also 0), or 1.
+    ///
+    /// # Panics
+    ///
+    /// Panics if:
+    /// - Both vertical_direction and horizontal_direction are 0.
+    /// - vertical_direction > 1 or veritcal_direction < -1
+    /// - horizontal_direction > 1 or horizontal_direction < -1
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let direction_up = Direction::new(1, 0);
+    /// let direction_down_left = Direction::new(-1, -1);
+    /// ```
+    pub fn new(vertical_direction: i8, horizontal_direction: i8) -> Self
+    {
+        let x = match (vertical_direction, horizontal_direction)
+        {
+            (-1, -1) => 0,
+            (-1, 0) => 1,
+            (-1, 1) => 2,
+            (0, -1) => 3,
+            // We skip the direction (0, 0).
+            (0, 1) => 4,
+            (1, -1) => 5,
+            (1, 0) => 6,
+            (1, 1) => 7,
+            _ => panic!("Invalid direction components specified!"),
+        };
+        Self(x)
+    }
+
+    /// Returns the magnitude of the vertical component.
+    ///
+    /// This can be either -1, 0, or 1.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let direction = Direction::new(1, 0);
+    /// assert_eq!(direction.vertical_component(), 1);
+    /// let direction = Direction::new(0, 1);
+    /// assert_eq!(direction.vertical_component(), 0);
+    /// let direction = Direction::new(-1, -1);
+    /// assert_eq!(direction.vertical_component(), -1);
+    /// ```
+    pub fn vertical_component(&self) -> i8
+    {
+        match self.0
+        {
+            0|1|2 => -1,
+            3|4 => 0,
+            5|6|7 => 1,
+            _ => unreachable!(),
+        }
+    }
+
+    /// Returns the magnitude of the horizontal component.
+    ///
+    /// This can be either -1, 0, or 1.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let direction = Direction::new(1, -1);
+    /// assert_eq!(direction.horizontal_component(), -1);
+    /// let direction = Direction::new(-1, 0);
+    /// assert_eq!(direction.horizontal_component(), 0);
+    /// let direction = Direction::new(0, 1);
+    /// assert_eq!(direction.horizontal_component(), 1);
+    /// ```
+    pub fn horizontal_component(&self) -> i8
+    {
+        match self.0
+        {
+            0|3|5 => -1,
+            1|6   => 0,
+            2|4|7 => 1,
+            _ => unreachable!(),
+        }
+    }
+
+    /// Returns the internal state represented by the Direction as a tuple,
+    /// where the first element is the vertical component and the second is the horizontal
+    /// component.
+    ///
+    /// Note that this is basically flipped from standard notation but matches better with the
+    /// representation used by [Square] and such.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let direction = Direction::new(1, 0);
+    /// assert_eq!(direction.as_tuple(), (1,0));
+    /// ```
+    pub fn as_tuple(&self) -> (i8, i8)
+    {
+        (self.vertical_component(), self.horizontal_component())
+    }
+}
+
+// All possible directions, specified at compile time.
+const DIRECTIONS: [Direction; 8] = [
+    Direction(0),
+    Direction(1),
+    Direction(2),
+    Direction(3),
+    Direction(4),
+    Direction(5),
+    Direction(6),
+    Direction(7),
+];
 
 #[cfg(test)]
 mod tests{
