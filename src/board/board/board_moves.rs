@@ -68,6 +68,27 @@ impl Board {
             | north_west_west
             | north_north_west
     }
+
+    /// Generates a bitmask of all valid squares that a king can move to.
+    ///
+    /// This is typically the 8 surrounding squares, unless it's on a corner or edge.
+    ///
+    /// # Arguments
+    ///
+    /// * `from` - The square the king is currently on.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let king_moves = Board::king_moves(Square::new(0, 0));
+    /// let king_move_squares: Vec<Square> = king_moves.squares().collect();
+    /// assert_eq!(king_move_squares.len(), 3);
+    /// assert_eq!(king_move_squares, vec![Square::new(1,0), Square::new(0,1), Square::new(1,1)]);
+    /// ```
+    fn king_moves(from: Square) -> Bitboard
+    {
+        todo!()
+    }
 }
 
 #[cfg(test)]
@@ -121,5 +142,32 @@ mod tests{
             Square::new(4, 5).into() |
             Square::new(5, 6).into();
         assert_eq!(knight_move_mask, expected_bitboard);
+    }
+
+    #[test]
+    fn king_moves_from_center()
+    {
+        let king_move_mask = Board::king_moves(Square::new(1, 1));
+        let expected_bitboard = 
+            Bitboard::from(Square::new(0, 0)) |
+            Square::new(0, 1).into() |
+            Square::new(0, 2).into() |
+            Square::new(1, 2).into() |
+            Square::new(2, 2).into() |
+            Square::new(2, 1).into() |
+            Square::new(2, 0).into() |
+            Square::new(1, 0).into();
+        assert_eq!(king_move_mask, expected_bitboard);
+    }
+
+    #[test]
+    fn king_moves_from_corner()
+    {
+        let king_move_mask = Board::king_moves(Square::new(0, 0));
+        let expected_bitboard =
+            Bitboard::from(Square::new(0, 1)) |
+            Square::new(1, 1).into() |
+            Square::new(1, 0).into();
+        assert_eq!(king_move_mask, expected_bitboard);
     }
 }
