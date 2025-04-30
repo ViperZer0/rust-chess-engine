@@ -1,4 +1,4 @@
-//! Bitboards!!!
+//! Implementation of bitboards, a wrapper around a u64.
 //!
 //! A bitboard (see [Wikipedia](https://en.wikipedia.org/wiki/Bitboard) and [ChessProgramming.org](https://www.chessprogramming.org/Bitboards) for more information)
 //! is a method of representing the state of a chess board by taking advantage of the fact that a
@@ -21,10 +21,10 @@
 //! One primary advantage is that a bitboard has a fixed size of 8 bytes (64 bits),
 //! and since the set of all possible game pieces is finite, we can create board states with a
 //! fixed, guaranteed size, allowing us to allocate on the stack instead of using a heap-allocated
-//! structure like a [Vec] or [std::collections::HashMap]. It can also make certain calculations 
+//! structure like a [Vec] or [HashMap](std::collections::HashMap). It can also make certain calculations 
 //! easier.
 //!
-//! Downsides are that some of the operations done on bitboards are incredibly opaque, difficult
+//! Some downsides are that some of the operations done on bitboards are incredibly opaque, difficult
 //! to reason about, and require extra math. It's also not uncommon to end up implementing a
 //! HashMap or Vector based piece "mailbox" for caching *anyways*, reducing the effectiveness of
 //! the fixed-size guarantee of bitboards.
@@ -35,14 +35,67 @@
 //! Currently, we use least significant file mapping, where bit 0 (the LSB) represents a1,
 //! then bit 1 represents b1, then c1, then bit 8 wraps around to represent a2.
 //!
-//! Note that while most of this library uses [crate::UInt] to choose whether or not to use u8s
+//! Hence:
+//! - Each consecutive set of 8 bits represents one row or *rank* of squares.
+//! - Thus, every 8th bit represents a square on the same *file* as the first.
+//! - The LSB is defined as a1. The next LSB is b1, c1, etc.
+//!
+//! This can cause some confusion as a 64 bit integer is represented in code
+//! from MSB to LSB going left to right, but the LSB is the leftmost, bottommost square
+//! on a White-oriented chess board.
+//!
+//! This means that for a bit mask of file 0 ("a"), the bit representation looks like 
+//! this when mapped to a chess board:
+//!
+//! ```none
+//! 10000000
+//! 10000000
+//! 10000000
+//! 10000000
+//! 10000000
+//! 10000000
+//! 10000000
+//! => 0b00000001000000010000000100000001000000010000000100000001
+//! ```
+//! Again, note that the LSB starts on the bottom left of a chessboard,
+//! but is typically represented as the rightmost bit when writing out binary notation.
+//!
+//! For file 7 ("f"), the bit representation is
+//! ```none
+//! 00000001
+//! 00000001
+//! 00000001
+//! 00000001
+//! 00000001
+//! 00000001
+//! 00000001
+//! => 0b10000000100000001000000010000000100000001000000010000000
+//! ```
+//!
+//! And for rank 0, the bitmask looks like this:
+//! 
+//! ```none
+//! 00000000
+//! 00000000
+//! 00000000
+//! 00000000
+//! 00000000
+//! 00000000
+//! 00000000
+//! 11111111
+//! => 0b11111111
+//! ```
+//!
+//! And so on.
+//!
+//! # Other
+//!
+//! Note that while most of this library uses [UInt](crate::UInt) to choose whether or not to use u8s
 //! or another integer type for coordinates, this library mandates u8s because of the hard-coded,
 //! fixed size of bitboards.
 //!
 //! Generally, providing a rank, file or index out of bounds (>= 8, >=8, and >= 64 respectively)
-//! will result in a panic.
-//!
-//! Hopefully there will be try_* operations that return a result.
+//! will result in a panic. Hopefully at some point there will be try_* operations that return a [Result] instead.
 
 use std::fmt::Display;
 
@@ -135,7 +188,7 @@ impl Display for OutOfBoundsTypeError
     }
 }
 
-/// See the module-level documentation for more information.
+/// See the [module-level documentation](./index.html) for more information on bitboards in general.
 #[derive(Debug, Clone, Copy, From, Add, Mul, Into, AddAssign, MulAssign, BitOrAssign, BitOr, BitAndAssign, BitAnd, BitXor, BitXorAssign, Default, Shl, Shr, ShlAssign, ShrAssign)]
 pub struct Bitboard(u64);
 
@@ -286,38 +339,8 @@ impl Bitboard
     /// Generates a bitmask that has only one file of 8 bits set to 1.
     /// all other cells are set to 0.
     ///
-    /// # Layout
-    ///
-    /// See the module-level documentation for more information on how a 1D, 64-bit integer
-    /// represents a 2D chess board. The TL:DR is;
-    /// - Each consecutive set of 8 bits represents one row or *rank* of squares.
-    /// - Thus, every 8 bits represents a set of squares on the same *file*.
-    /// - The LSB is defined as a1. Then b1, c1, etc.
-    ///
-    /// This can cause some confusion as a 64 bit integer is represented in code
-    /// from MSB to LSB going left to right, but the LSB is the leftmost, bottommost square
-    /// on a White-oriented chess board.
-    ///
-    /// This means that for file 0 ("a"), the integers bit representation looks like this:
-    ///
-    /// 00000001
-    /// 00000001
-    /// 00000001
-    /// 00000001
-    /// 00000001
-    /// 00000001
-    /// 00000001
-    /// => 0b00000001000000010000000100000001000000010000000100000001
-    ///
-    /// For file 7 ("f"), the bit representation is
-    /// 10000000
-    /// 10000000
-    /// 10000000
-    /// 10000000
-    /// 10000000
-    /// 10000000
-    /// 10000000
-    /// => 0b10000000100000001000000010000000100000001000000010000000
+    /// See the [module-level documentation](./index.html) for more information on the layout of
+    /// files.
     ///
     /// # Arguments
     ///
