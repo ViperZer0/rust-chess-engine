@@ -422,6 +422,29 @@ impl Bitboard
     {
         BitboardSquareIterator::new(&self)
     }
+
+    /// Returns true if a given bit is set to true,
+    /// false otherwise. 
+    ///
+    /// Panics if `index >= 64`
+    ///
+    /// # Arguments
+    ///
+    /// * `index` - The *index*-th bit to test.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// [TODO:write some example code]
+    /// ```
+    pub fn is_bit_set(&self, index: u8) -> bool
+    {
+        // An AND mask with all bits turned off except
+        // the desired bit, which will be set to whatever it is in self.
+        // If the end result is all 0s, the desired bit was 0.
+        // If the end result is not 0, the desired bit was 1.
+        (*self & Bitboard::new(2_u64.pow(index as u32))).0 != 0
+    }
 }
 
 impl From<Square> for Bitboard
@@ -616,6 +639,45 @@ mod tests
     fn test_file_mask_range_bitor_all_ranks()
     {
         assert_eq!(Bitboard::file_mask_iter(0..8).0, u64::MAX);
+    }
+
+    #[test]
+    fn test_is_bit_set_all_bits_0()
+    {
+        let bitboard = Bitboard::new(0);
+        for i in 0..64
+        {
+            assert!(!bitboard.is_bit_set(i));
+        }
+    }
+
+    #[test]
+    fn test_is_bit_set_1()
+    {
+        let bitboard = Bitboard::new(1);
+        assert!(bitboard.is_bit_set(0));
+        for i in 1..64
+        {
+            assert!(!bitboard.is_bit_set(i));
+        }
+    }
+
+    #[test]
+    fn test_is_bit_set_all_bits_1()
+    {
+        let bitboard = Bitboard::new(u64::MAX);
+        for i in 0..64
+        {
+            assert!(bitboard.is_bit_set(i));
+        }
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_is_bit_set_panics_out_of_range()
+    {
+        let bitboard = Bitboard::new(0);
+        bitboard.is_bit_set(64);
     }
 }
 
