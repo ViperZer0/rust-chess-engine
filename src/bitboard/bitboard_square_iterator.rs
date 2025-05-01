@@ -54,7 +54,7 @@ impl Iterator for BitboardSquareIterator<'_>
         }
         // Once we find a valid index, convert it to a square and return it.
         // We subtract one since the current index is 1 higher than the valid bitmask we found.
-        Some(Bitboard::index_to_coords(self.cur_index - 1))
+        Some(Bitboard::index_to_coords_unchecked(self.cur_index - 1))
     }
 }
 

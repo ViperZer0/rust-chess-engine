@@ -211,6 +211,9 @@ impl Bitboard
     }
 
     /// Converts a 2D set of coordinates to a 1D index in the bitboard "array".
+    /// 
+    /// Panics if the rank or file of the [Square] is greater than 7. See [Self::coords_to_index]
+    /// for a fallible, non-panicking alternative.
     ///
     /// # Arguments
     ///
@@ -221,13 +224,16 @@ impl Bitboard
     /// ```
     /// [TODO:write some example code]
     /// ```
-    pub fn coords_to_index(square: Square) -> u8
+    pub fn coords_to_index_unchecked(square: Square) -> u8
     {
-        Self::try_coords_to_index(square).expect("The rank or file arguments exceeds the maximum of 7.")
+        Self::coords_to_index(square).expect("The rank or file arguments exceeds the maximum of 7.")
     }
 
     /// Converts a 1D "index" into the bitboard array to the 2D coordinates that represents the
     /// same square.
+    ///
+    /// Panics if `index >= 64`. See [Self::index_to_coords] for the checked version that returns
+    /// a [Result]
     ///
     /// # Arguments
     ///
@@ -238,12 +244,12 @@ impl Bitboard
     /// ```
     /// [TODO:write some example code]
     /// ```
-    pub fn index_to_coords(index: u8) -> Square
+    pub fn index_to_coords_unchecked(index: u8) -> Square
     {
-        Self::try_index_to_coords(index).expect("The index provided exceeds the maximum of 63.")
+        Self::index_to_coords(index).expect("The index provided exceeds the maximum of 63.")
     }
 
-    /// Like [Self::coords_to_index] but fallible, returns an [Err] if the input args 
+    /// Like [Self::coords_to_index_unchecked] but fallible, returns an [Err] if the input args 
     /// exceed the maximum instead of panicking.
     ///
     /// # Arguments
@@ -259,13 +265,13 @@ impl Bitboard
     /// ```
     /// [TODO:write some example code]
     /// ```
-    pub fn try_coords_to_index(square: Square) -> Result<u8, OutOfBoundsError>
+    pub fn coords_to_index(square: Square) -> Result<u8, OutOfBoundsError>
     {
         _ = OutOfBoundsError::check_input_coords(square.rank, square.file)?;
         Ok(8*square.rank + square.file)
     }
 
-    /// Like [Self::index_to_coords] but fallible, returns an [Err] if the input
+    /// Like [Self::index_to_coords_unchecked] but fallible, returns an [Err] if the input
     /// exceeds the maximum instead of panicking.
     ///
     /// # Arguments
@@ -281,7 +287,7 @@ impl Bitboard
     /// ```
     /// [TODO:write some example code]
     /// ```
-    pub fn try_index_to_coords(index: u8) -> Result<Square, OutOfBoundsError>
+    pub fn index_to_coords(index: u8) -> Result<Square, OutOfBoundsError>
     {
         _ = OutOfBoundsError::check_input_index(index)?;
         // this is equivalent to
@@ -469,7 +475,7 @@ impl From<Square> for Bitboard
     fn from(value: Square) -> Self {
         // Converts an index (i.e "the 12th bit")
         // to the number whose index is set to 1 (i.e the 12th bit is 1, all others are 0)
-        Bitboard::new(2_u64.pow(Bitboard::coords_to_index(value).into()))
+        Bitboard::new(2_u64.pow(Bitboard::coords_to_index_unchecked(value).into()))
     }
 }
 
@@ -482,45 +488,45 @@ mod tests
     #[should_panic]
     fn test_exceed_rank_fails()
     {
-        Bitboard::coords_to_index(Square::new(8,0));
+        Bitboard::coords_to_index_unchecked(Square::new(8,0));
     }
 
     #[test]
     #[should_panic]
     fn test_exceed_file_fails()
     {
-        Bitboard::coords_to_index(Square::new(0,8));
+        Bitboard::coords_to_index_unchecked(Square::new(0,8));
     }
 
     #[test]
     #[should_panic]
     fn test_exceed_index_fails()
     {
-        Bitboard::index_to_coords(64);
+        Bitboard::index_to_coords_unchecked(64);
     }
 
     #[test]
     fn test_exceed_rank_returns_err()
     {
-        assert!(Bitboard::try_coords_to_index(Square::new(8,0)).is_err());
+        assert!(Bitboard::coords_to_index(Square::new(8,0)).is_err());
     }
 
     #[test]
     fn test_exceed_file_returns_err()
     {
-        assert!(Bitboard::try_coords_to_index(Square::new(0,8)).is_err());
+        assert!(Bitboard::coords_to_index(Square::new(0,8)).is_err());
     }
 
     #[test]
     fn test_exceed_index_returns_err()
     {
-        assert!(Bitboard::try_index_to_coords(64).is_err());
+        assert!(Bitboard::index_to_coords(64).is_err());
     }
 
     #[test]
     fn test_normal_coords_ok()
     {
-        let result = Bitboard::try_coords_to_index(Square::new(0,0));
+        let result = Bitboard::coords_to_index(Square::new(0,0));
         assert!(result.is_ok());
         assert_eq!(result.unwrap(), 0);
     }
@@ -528,7 +534,7 @@ mod tests
     #[test]
     fn test_normal_coords_2()
     {
-        let result = Bitboard::try_coords_to_index(Square::new(0,5));
+        let result = Bitboard::coords_to_index(Square::new(0,5));
         assert!(result.is_ok());
         assert_eq!(result.unwrap(), 5);
     }
@@ -536,7 +542,7 @@ mod tests
     #[test]
     fn test_normal_coords_3()
     {
-        let result = Bitboard::try_coords_to_index(Square::new(1,1));
+        let result = Bitboard::coords_to_index(Square::new(1,1));
         assert!(result.is_ok());
         assert_eq!(result.unwrap(), 9);
     }
@@ -544,7 +550,7 @@ mod tests
     #[test]
     fn test_normal_index()
     {
-        let result = Bitboard::try_index_to_coords(0);
+        let result = Bitboard::index_to_coords(0);
         assert!(result.is_ok());
         assert_eq!(result.unwrap(), Square::new(0, 0));
     }
@@ -552,7 +558,7 @@ mod tests
     #[test]
     fn test_normal_index_2()
     {
-        let result = Bitboard::try_index_to_coords(3);
+        let result = Bitboard::index_to_coords(3);
         assert!(result.is_ok());
         assert_eq!(result.unwrap(), Square::new(0, 3));
     }
@@ -560,7 +566,7 @@ mod tests
     #[test]
     fn test_normal_index_3()
     {
-        let result = Bitboard::try_index_to_coords(10);
+        let result = Bitboard::index_to_coords(10);
         assert!(result.is_ok());
         assert_eq!(result.unwrap(), Square::new(1, 2));
     }
