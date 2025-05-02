@@ -386,8 +386,8 @@ impl Direction
 }
 
 #[cfg(test)]
-mod tests{
-
+mod tests
+{
     use super::*;
 
     #[test]
@@ -592,7 +592,7 @@ mod tests{
         let bishop_squares: Vec<Square> = bishop_move_mask.squares().collect();
         assert_eq!(bishop_squares.len(), AVAILABLE_BISHOP_MOVES);
 
-        let mut expected_bishop_squares: Vec<Square> = Vec
+        let mut expected_bishop_squares: Vec<Square> = Vec::new();
         for i in 1..8
         {
             expected_bishop_squares.push(Square::new(i, i));
