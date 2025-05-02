@@ -5,9 +5,39 @@
 //! the exact sequence of operations needed to test different moves outside of the scope of a
 //! `Bitboard`, and the [Board](super::Board) impl is long enough as is.
 //!
-//! Most of the operations implemented here take a [Square](super::Square) as input and output
+//! Most of the operations implemented here take a [Square](super::Square) and the active player's
+//! color ([PlayerColor](super::PlayerColor)) as input and output
 //! a [Bitboard](crate::Bitboard) representing the valid moves that piece can make.
 //!
+//! These operations take a [PlayerColor] because "occupied" squares are different depending on the
+//! piece color. See [Occupancy](#Occupancy) for more information.
+//!
+//! # Occupancy
+//!
+//! Occupancy refers to whether or not a square is occupied. Here, when we say we "take occupancy
+//! into account", that means we are checking the current state of the board to find valid squares
+//! to move to. *All* pieces, and all moves here that generate a bitboard of valid moves
+//! consider occupancy. 
+//!
+//! **A square that can be captured is not considered occupied.**
+//!
+//! But all squares beyond the capturable square are.
+//!
+//! Consider the following:
+//! ```none
+//! [O][][][][X][#][#][#]
+//! ```
+//! We'll say this represents a rank, and O is our player's rook, and X is another player's piece.
+//! The square that X is on is unoccupied, because O can capture it, but all the squares beyond it
+//! (represented as #) are considered "occupied", or rather, *unoccupyable* might be a better term.
+//! 
+//! **All squares with allied pieces on it are occupied.**
+//!
+//! This is why all operations in this module take a [PlayerColor], because it is possible for a
+//! piece to move onto a currently occupied square as long as the piece being displaced is the
+//! other player's. Under no circumstances is a piece allowed to move into a space occupied by
+//! another piece of the same color. The only exception to that COULD be considered to be checking,
+//! but checking is weird and is handled in its own edge case anyways.
 
 use crate::{bitboard::Bitboard, board::{PlayerColor, Square}};
 
@@ -126,6 +156,19 @@ impl Board {
             | south_west
     }
 
+    /// Generates a bitmask of all valid squares that a queen can move to, taking into account
+    /// occupancy (i.e not moving through other pieces)
+    ///
+    /// # Arguments
+    ///
+    /// * `active_color` - [TODO:description]
+    /// * `from` - [TODO:description]
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// [TODO:write some example code]
+    /// ```
     pub fn queen_moves(&self, active_color: PlayerColor, from: Square) -> Bitboard
     {
         // A queen can move anywhere and everywhere a bishop or a rook can.
