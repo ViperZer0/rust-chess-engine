@@ -526,4 +526,88 @@ mod tests{
         assert_eq!(king_move_mask, expected_bitboard);
     }
 
+    #[test]
+    fn rook_moves_on_empty_board()
+    {
+        const AVAILABLE_ROOK_MOVES: usize = 14;
+        let board = Board::new_blank_board();
+        let rook_move_mask = board.rook_moves(PlayerColor::White, Square::new(0, 0));
+        let rook_squares: Vec<Square> = rook_move_mask.squares().collect();
+        assert_eq!(rook_squares.len(), AVAILABLE_ROOK_MOVES);
+
+        let mut expected_rook_squares: Vec<Square> = Vec::with_capacity(AVAILABLE_ROOK_MOVES);
+        for rank in 1..8
+        {
+            expected_rook_squares.push(Square::new(rank,0));
+        }
+
+        for file in 1..8
+        {
+            expected_rook_squares.push(Square::new(0, file));
+        }
+
+        assert_eq!(rook_squares, expected_rook_squares);
+    }
+
+    #[test]
+    fn rook_cant_move_on_full_board()
+    {
+        let board = Board::new_default_starting_board();
+        let rook_move_mask = board.rook_moves(PlayerColor::White, Square::new(0, 0));
+        // Rook in the corner starts with no valid moves.
+        assert_eq!(rook_move_mask, Bitboard::new(0));
+    }
+
+    #[test]
+    fn rook_moves_into_opponent_pieces_occupancy_check()
+    {
+        const AVAILABLE_ROOK_MOVES: usize = 10;
+        let board = Board::new_default_starting_board();
+        let rook_move_mask = board.rook_moves(PlayerColor::White, Square::new(2, 0));
+        let rook_squares: Vec<Square> = rook_move_mask.squares().collect();
+        assert_eq!(rook_squares.len(), AVAILABLE_ROOK_MOVES);
+
+        let mut expected_rook_squares: Vec<Square> = Vec::with_capacity(AVAILABLE_ROOK_MOVES);
+        for file in 1..8
+        {
+            expected_rook_squares.push(Square::new(2, file));
+        }
+
+        for rank in 3..7
+        {
+            expected_rook_squares.push(Square::new(rank, 0));
+        }
+        // Seal against mutating vector anymore
+        let expected_rook_squares = expected_rook_squares;
+
+        assert_eq!(rook_squares, expected_rook_squares);
+    }
+
+    #[test]
+    fn bishop_moves_on_empty_board()
+    {
+        const AVAILABLE_BISHOP_MOVES: usize = 7;
+        let board = Board::new_default_starting_board();
+        let bishop_move_mask = board.bishop_moves(PlayerColor::White, Square::new(0, 0));
+        let bishop_squares: Vec<Square> = bishop_move_mask.squares().collect();
+        assert_eq!(bishop_squares.len(), AVAILABLE_BISHOP_MOVES);
+
+        let mut expected_bishop_squares: Vec<Square> = Vec
+        for i in 1..8
+        {
+            expected_bishop_squares.push(Square::new(i, i));
+        }
+        // Seal against mutating vector anymore.
+        let expected_bishop_squares = expected_bishop_squares;
+
+        assert_eq!(bishop_squares, expected_bishop_squares);
+    }
+
+    #[test]
+    fn bishop_cant_move_on_full_board()
+    {
+        let board = Board::new_default_starting_board();
+        let bishop_move_mask = board.bishop_moves(PlayerColor::White, Square::new(0, 2));
+        assert_eq!(bishop_move_mask, Bitboard::new(0));
+    }
 }
