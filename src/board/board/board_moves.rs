@@ -124,12 +124,13 @@ impl Board {
     /// # Examples
     ///
     /// ```
-    /// let king_moves = Board::king_moves(Square::new(0, 0));
+    /// let board = Board::new_blank_board();
+    /// let king_moves = board.king_moves(PlayerColor::White, Square::new(0, 0));
     /// let king_move_squares: Vec<Square> = king_moves.squares().collect();
     /// assert_eq!(king_move_squares.len(), 3);
     /// assert_eq!(king_move_squares, vec![Square::new(1,0), Square::new(0,1), Square::new(1,1)]);
     /// ```
-    pub fn king_moves(from: Square) -> Bitboard
+    pub fn king_moves(&self, active_color: PlayerColor, from: Square) -> Bitboard
     {
         let king_on_rank_1_or_higher = Bitboard::from(from) & Bitboard::rank_mask_iter(1..8);
         let king_on_rank_6_or_lower = Bitboard::from(from) & Bitboard::rank_mask_iter(0..7);
@@ -228,12 +229,12 @@ impl Board {
             if self.query().color(!active_color).piece_at_unchecked(checked_square.unwrap()).result()
             {
                 // Enable the bit for the current square.
-                bitboard |= Bitboard::new(0).set_bit(Bitboard::coords_to_index_unchecked(checked_square.unwrap()), true);
+                bitboard |= Bitboard::from(checked_square.unwrap());
                 break;
             }
             // Finally if NONE of the following was true, we can add the current square and
             // continue onto the next square in the given direction
-            bitboard |= Bitboard::new(0).set_bit(Bitboard::coords_to_index_unchecked(checked_square.unwrap()), true);
+            bitboard |= Bitboard::from(checked_square.unwrap());
             checked_square = increment_square_in_direction(&checked_square.unwrap(), direction);
         }
         bitboard
@@ -442,9 +443,43 @@ mod tests{
     }
 
     #[test]
+    fn knight_moves_with_occupancy_checks()
+    {
+        let board = Board::new_default_starting_board();
+        // This is the b-file knight's default starting position
+        let square = Square::new(0, 1);
+        let knight_move_mask = board.knight_moves(PlayerColor::White, square);
+        // Knight cannot move to d2 since a pawn is there.
+        let expected_bitboard = 
+            Bitboard::from(Square::new(2, 0)) |
+            Square::new(2,2).into();
+        assert_eq!(knight_move_mask, expected_bitboard);
+    }
+
+    #[test]
+    fn knight_moves_with_occupancy_check_enemy_side()
+    {
+        let board = Board::new_default_starting_board();
+        let square = Square::new(5, 2);
+        let knight_move_mask = board.knight_moves(PlayerColor::White, square);
+        // Test that a knight CAN move into squares occupied by the other side's pieces.
+        let expected_bitboard =
+            Bitboard::from(Square::new(7, 1)) |
+            Square::new(7,3).into() |
+            Square::new(6,4).into() |
+            Square::new(4,4).into() |
+            Square::new(3,1).into() |
+            Square::new(4,0).into() |
+            Square::new(6,0).into() |
+            Square::new(7,1).into();
+        assert_eq!(knight_move_mask, expected_bitboard);
+    }
+
+    #[test]
     fn king_moves_from_center()
     {
-        let king_move_mask = Board::king_moves(Square::new(1, 1));
+        let board = Board::new_blank_board();
+        let king_move_mask = board.king_moves(PlayerColor::White, Square::new(1, 1));
         let expected_bitboard = 
             Bitboard::from(Square::new(0, 0)) |
             Square::new(0, 1).into() |
@@ -460,11 +495,35 @@ mod tests{
     #[test]
     fn king_moves_from_corner()
     {
-        let king_move_mask = Board::king_moves(Square::new(0, 0));
+        let board = Board::new_blank_board();
+        let king_move_mask = board.king_moves(PlayerColor::White, Square::new(0, 0));
         let expected_bitboard =
             Bitboard::from(Square::new(0, 1)) |
             Square::new(1, 1).into() |
             Square::new(1, 0).into();
         assert_eq!(king_move_mask, expected_bitboard);
     }
+
+    #[test]
+    fn king_occupancy_default_board()
+    {
+        let board = Board::new_default_starting_board();
+        let king_move_mask = board.king_moves(PlayerColor::White, Square::new(0, 4));
+        assert_eq!(king_move_mask, Bitboard::new(0));
+    }
+
+    #[test]
+    fn king_occupancy_enemy_pieces()
+    {
+        let board = Board::new_default_starting_board();
+        let king_move_mask = board.king_moves(PlayerColor::White, Square::new(5, 7));
+        let expected_bitboard =
+            Bitboard::from(Square::new(6, 7)) |
+            Square::new(6, 6).into() |
+            Square::new(5, 6).into() |
+            Square::new(4, 6).into() |
+            Square::new(4, 7).into();
+        assert_eq!(king_move_mask, expected_bitboard);
+    }
+
 }
