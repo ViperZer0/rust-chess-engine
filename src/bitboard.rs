@@ -100,7 +100,7 @@
 use std::fmt::Display;
 
 use bitboard_square_iterator::BitboardSquareIterator;
-use derive_more::{Add, AddAssign, BitAnd, BitAndAssign, BitOr, BitOrAssign, BitXor, BitXorAssign, From, Into, Mul, MulAssign, Shl, ShlAssign, Shr, ShrAssign};
+use derive_more::{Add, AddAssign, BitAnd, BitAndAssign, BitOr, BitOrAssign, BitXor, BitXorAssign, From, Into, Mul, MulAssign, Not, Shl, ShlAssign, Shr, ShrAssign};
 use thiserror::Error;
 
 use crate::board::Square;
@@ -189,7 +189,7 @@ impl Display for OutOfBoundsTypeError
 }
 
 /// See the [module-level documentation](./index.html) for more information on bitboards in general.
-#[derive(Debug, Clone, Copy, From, Add, Mul, Into, AddAssign, MulAssign, BitOrAssign, BitOr, BitAndAssign, BitAnd, BitXor, BitXorAssign, Default, Shl, Shr, ShlAssign, ShrAssign, PartialEq)]
+#[derive(Debug, Clone, Copy, From, Add, Mul, Into, AddAssign, MulAssign, BitOrAssign, BitOr, BitAndAssign, BitAnd, BitXor, BitXorAssign, Default, Shl, Shr, ShlAssign, ShrAssign, PartialEq, Not)]
 pub struct Bitboard(u64);
 
 impl Bitboard
@@ -449,7 +449,37 @@ impl Bitboard
         // the desired bit, which will be set to whatever it is in self.
         // If the end result is all 0s, the desired bit was 0.
         // If the end result is not 0, the desired bit was 1.
-        (*self & Bitboard::new(2_u64.pow(index as u32))).0 != 0
+        (*self & Self::new(2_u64.pow(index as u32))).0 != 0
+    }
+
+    /// Sets a specific bit in the bitboard.
+    ///
+    ///
+    /// # Arguments
+    ///
+    /// * `index` - the index of the bit to set.
+    /// * `to` - true if the bit should be set to true, false if the bit should be set to false.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let mut bitboard = Bitboard::new(0);
+    /// // Sets the 0th bit on
+    /// let new_bitboard = bitboard.set_bit(0, true);
+    /// assert_eq!(new_bitboard, Bitboard::new(1));
+    /// // Turns the 0th bit back off again
+    /// let new_bitboard = new_bitboard.set_bit(0, false);
+    /// assert_eq!(new_bitboard, Bitboard::new(0));
+    /// ```
+    pub fn set_bit(&self, index: u8, to: bool) -> Self
+    {
+        let mut new = self.clone();
+        match to
+        {
+            true => new |= Self::new(2_u64.pow(index as u32)),
+            false => new &= !Self::new(2_u64.pow(index as u32)),
+        }
+        new
     }
 }
 
