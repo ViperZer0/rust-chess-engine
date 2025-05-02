@@ -492,6 +492,11 @@ impl From<Square> for Bitboard
     ///
     /// * `value` - The square to enable the mask for.
     ///
+    /// # Panics
+    /// 
+    /// Panics if [Square] is out of bounds:
+    /// i.e if rank or file is `>= 8`
+    ///
     /// # Examples
     ///
     /// ```
