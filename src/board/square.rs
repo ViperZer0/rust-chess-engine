@@ -35,7 +35,7 @@ impl Square {
     /// // Represents the square b3.
     /// let square2 = Square::new(2,1);
     /// ```
-    pub fn new(rank: UInt, file: UInt) -> Self
+    pub const fn new(rank: UInt, file: UInt) -> Self
     {
         Square
         {

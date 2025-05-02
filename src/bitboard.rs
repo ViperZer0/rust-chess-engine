@@ -122,7 +122,7 @@ pub struct OutOfBoundsError
 
 impl OutOfBoundsError
 {
-    fn check_input_coords(rank: u8, file: u8) -> Result<(), Self>
+    const fn check_input_coords(rank: u8, file: u8) -> Result<(), Self>
     {
         if rank >= 8
         {
@@ -146,7 +146,7 @@ impl OutOfBoundsError
         }
     }
 
-    fn check_input_index(index: u8) -> Result<(), Self>
+    const fn check_input_index(index: u8) -> Result<(), Self>
     {
         if index >= 64
         {
@@ -205,7 +205,7 @@ impl Bitboard
     /// let bitboard = Bitboard::new(0);
     /// assert_eq!(0, bitboard.into());
     /// ```
-    pub fn new(input: u64) -> Self
+    pub const fn new(input: u64) -> Self
     {
         Self(input)
     }
@@ -313,7 +313,7 @@ impl Bitboard
     /// assert_eq!(0b1111111100000000, Bitboard::rank_mask(1));
     /// assert_eq!(0b111111110000000000000000, Bitboard::rank_mask(2));
     /// ```
-    pub fn rank_mask(rank: u8) -> Self
+    pub const fn rank_mask(rank: u8) -> Self
     {
         assert!(rank < 8, "Error: Rank provided was greater than or equal to 8.");
         Bitboard::new(0b11111111 << (rank * 8))
@@ -363,7 +363,7 @@ impl Bitboard
     /// assert_eq!(0x0202020202020202, Bitboard::file_mask(1));
     /// assert_eq!(0x0404040404040404, Bitboard::file_mask(2));
     /// ```
-    pub fn file_mask(file: u8) -> Self
+    pub const fn file_mask(file: u8) -> Self
     {
         // Yes, this is super hacky, it doesn't look great,
         // but it's about 10x faster than doing a for loop.
