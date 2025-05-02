@@ -158,12 +158,15 @@ impl Board {
     }
 
     /// Generates a bitmask of all valid squares that a queen can move to, taking into account
-    /// occupancy (i.e not moving through other pieces)
+    /// occupancy (i.e not moving through other pieces).
+    ///
+    /// Since a queen moves like a bishop + a rook, `queen_moves` is 
+    /// equivalent to `bishop_moves | rook_moves`
     ///
     /// # Arguments
     ///
-    /// * `active_color` - [TODO:description]
-    /// * `from` - [TODO:description]
+    /// * `active_color` - The moving/active piece's color
+    /// * `from` - The square the piece is moving from
     ///
     /// # Examples
     ///
@@ -176,6 +179,19 @@ impl Board {
         self.bishop_moves(active_color, from) | self.rook_moves(active_color, from)
     }
 
+    /// Generates a bit mask of all valid squares that a bishop can move to, taking into account
+    /// occupancy.
+    ///
+    /// # Arguments
+    ///
+    /// * `active_color` - The active piece's color
+    /// * `from` - The square the piece is moving from.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// [TODO:write some example code]
+    /// ```
     pub fn bishop_moves(&self, active_color: PlayerColor, from: Square) -> Bitboard
     {
         self.moves_in_direction(active_color, from, DIRECTION_UP_LEFT) |
@@ -184,6 +200,19 @@ impl Board {
         self.moves_in_direction(active_color, from, DIRECTION_DOWN_LEFT)
     }
 
+    /// Generates a bitmask of all valid squares that a rook can move to, taking into account
+    /// occupancy.
+    ///
+    /// # Arguments
+    ///
+    /// * `active_color` - The active piece's color
+    /// * `from` - The square the piece is moving from
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// [TODO:write some example code]
+    /// ```
     pub fn rook_moves(&self, active_color: PlayerColor, from: Square) -> Bitboard
     {
         self.moves_in_direction(active_color, from, DIRECTION_UP) |
@@ -278,19 +307,12 @@ impl Direction
     /// Creates a new direction from the two components/basis of the direction space.
     ///
     /// Note that the magnitude of the direction vector cannot be 0, so `Direction::new(0, 0)` is
-    /// invalid.
+    /// invalid, as is a direction component where `abs(component) > 1`.
     ///
     /// # Arguments
     ///
     /// * `vertical_direction` - The vertical component. Can be -1, 0 (unless horizontal_direction is also 0), or 1 
     /// * `horizontal_direction` - The horizontal component. Can be -1, 0 (unless vertical_direction is also 0), or 1.
-    ///
-    /// # Panics
-    ///
-    /// Panics if:
-    /// - Both vertical_direction and horizontal_direction are 0.
-    /// - vertical_direction > 1 or veritcal_direction < -1
-    /// - horizontal_direction > 1 or horizontal_direction < -1
     ///
     /// # Examples
     ///
@@ -298,22 +320,45 @@ impl Direction
     /// let direction_up = Direction::new(1, 0);
     /// let direction_down_left = Direction::new(-1, -1);
     /// ```
-    pub fn new(vertical_direction: i8, horizontal_direction: i8) -> Self
+    pub const fn new(vertical_direction: i8, horizontal_direction: i8) -> Option<Self>
     {
-        let x = match (vertical_direction, horizontal_direction)
+        match (vertical_direction, horizontal_direction)
         {
-            (-1, -1) => 0,
-            (-1, 0) => 1,
-            (-1, 1) => 2,
-            (0, -1) => 3,
+            (-1, -1) => Some(Self(0)),
+            (-1, 0) => Some(Self(1)),
+            (-1, 1) => Some(Self(2)),
+            (0, -1) => Some(Self(3)),
             // We skip the direction (0, 0).
-            (0, 1) => 4,
-            (1, -1) => 5,
-            (1, 0) => 6,
-            (1, 1) => 7,
-            _ => panic!("Invalid direction components specified!"),
-        };
-        Self(x)
+            (0, 1) => Some(Self(4)),
+            (1, -1) => Some(Self(5)),
+            (1, 0) => Some(Self(6)),
+            (1, 1) => Some(Self(7)),
+            _ => None
+        }
+    }
+
+    /// Same as [Self::new] but panics if either of `vertical_direction`
+    /// or `horizontal_direction` are outside of the allowed values.
+    ///
+    /// # Arguments
+    ///
+    /// * `vertical_direction` - The vertical component. Can be -1, 1, or 0 (unless
+    /// `horizontal_direction` is also 0).
+    /// * `horizontal_direction` - The horizontal component. Can be -1, 1, or 0 (unless 
+    /// `vertical_direction` is also 0).
+    ///
+    /// # Examples
+    ///
+    /// ```should_panic
+    /// let 
+    /// ```
+    pub const fn new_unchecked(vertical_direction: i8, horizontal_direction: i8) -> Self
+    {
+        match Self::new(vertical_direction, horizontal_direction)
+        {
+            Some(x) => x,
+            None => panic!("Failed to create new Direction!"),
+        }
     }
 
     /// Returns the magnitude of the vertical component.
@@ -330,7 +375,7 @@ impl Direction
     /// let direction = Direction::new(-1, -1);
     /// assert_eq!(direction.vertical_component(), -1);
     /// ```
-    pub fn vertical_component(&self) -> i8
+    pub const fn vertical_component(&self) -> i8
     {
         match self.0
         {
@@ -355,7 +400,7 @@ impl Direction
     /// let direction = Direction::new(0, 1);
     /// assert_eq!(direction.horizontal_component(), 1);
     /// ```
-    pub fn horizontal_component(&self) -> i8
+    pub const fn horizontal_component(&self) -> i8
     {
         match self.0
         {
@@ -379,7 +424,7 @@ impl Direction
     /// let direction = Direction::new(1, 0);
     /// assert_eq!(direction.as_tuple(), (1,0));
     /// ```
-    pub fn as_tuple(&self) -> (i8, i8)
+    pub const fn as_tuple(&self) -> (i8, i8)
     {
         (self.vertical_component(), self.horizontal_component())
     }
