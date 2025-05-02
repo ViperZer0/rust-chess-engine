@@ -1,6 +1,6 @@
 use std::{collections::HashMap, fmt::Display};
 
-use crate::{bitboard::Bitboard, board::{PieceType, PlayerColor}, parse::MoveCommand};
+use crate::{bitboard::Bitboard, board::{self, PieceType, PlayerColor}, parse::MoveCommand};
 
 use super::{board_config::BoardConfigurationBuilder, error::MoveError, r#move::Move, BoardConfiguration, BoardResult, CastlingAvailability, Piece, Square};
 mod board_moves;
@@ -13,7 +13,7 @@ mod board_queries;
 /// maintain the internal state and not violate the rules of chess or anything. Boards are
 /// immutable: making moves on a board does not modify the existing board but instead returns a new
 /// one.
-#[derive(Default, Clone)]
+#[derive(Clone)]
 pub struct Board 
 {
     /// Tracks what piece is on a given square.
@@ -72,7 +72,23 @@ impl Board {
     /// Takes a [BoardConfiguration] which represents the desired starting state of the board.
     pub fn new_board_with_configuration(board_configuration: &BoardConfiguration) -> Self
     {
-        let mut new_board = Self::default();
+        let mut new_board = Self {
+            active_color: board_configuration.active_color(),
+            castling_availability: board_configuration.castling_availability(),
+            en_passant_target_square: board_configuration.en_passant_target_square(),
+            halfmove_clock: board_configuration.halfmove_clock(),
+            fullmove_number: board_configuration.fullmove_number(),
+            // Set remaining defaults. These will be set programatically below.
+            piece_mailbox: HashMap::new(),
+            white_pieces: Bitboard::default(),
+            black_pieces: Bitboard::default(),
+            king_pieces: Bitboard::default(),
+            queen_pieces: Bitboard::default(),
+            rook_pieces: Bitboard::default(),
+            knight_pieces: Bitboard::default(),
+            bishop_pieces: Bitboard::default(),
+            pawn_pieces: Bitboard::default()
+        };
 
         // Add all pieces to the board, setting the state of all the bitboards accordingly
         for (square, piece) in board_configuration.get_pieces().iter()
@@ -308,7 +324,7 @@ impl Display for Board
         // Initial spacing for top left corner
         // Two spaces.
         write!(f, "  ")?;
-        let spacing = 4;
+        let spacing = 3;
         // We map 0-8 to a-h for writing the files.
         for char in (0..8).map(|x| char::from_u32(x + 'a' as u32).expect(&format!("{} was not a valid character", x + 'a' as u32)))
         {
@@ -332,6 +348,7 @@ impl Display for Board
                     None => write!(f, "[ ]")?,
                 };
             }
+            write!(f, "\n")?;
         }
         Ok(())
     }

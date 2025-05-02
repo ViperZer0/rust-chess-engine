@@ -158,6 +158,31 @@ impl BoardConfiguration
             fullmove_number,
         }
     }
+
+    pub fn active_color(&self) -> PlayerColor
+    {
+        self.active_color
+    }
+
+    pub fn castling_availability(&self) -> CastlingAvailability
+    {
+        self.castling_availability
+    }
+
+    pub fn en_passant_target_square(&self) -> Option<Square>
+    {
+        self.en_passant_target_square
+    }
+
+    pub fn halfmove_clock(&self) -> u8
+    {
+        self.halfmove_clock
+    }
+
+    pub fn fullmove_number(&self) -> u8
+    {
+        self.fullmove_number
+    }
 }
 
 impl Display for BoardConfiguration
