@@ -41,7 +41,7 @@ pub struct BoardConfiguration
 /// Note that this doesn't include information on *temporary* scenarios in which castling are
 /// prevented. If castling would put the king in check, the option is still available to the king
 /// later.
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, Copy)]
 pub struct CastlingAvailability
 {
     white_castle_kingside: bool,
@@ -89,6 +89,22 @@ impl CastlingAvailability
             white_castle_queenside,
             black_castle_kingside,
             black_castle_queenside
+        }
+    }
+}
+
+impl Default for CastlingAvailability
+{
+    /// Default castling availability on a starting board
+    /// is true for both sides.
+    fn default() -> Self
+    {
+        Self
+        {
+            white_castle_kingside: true,
+            white_castle_queenside: true,
+            black_castle_kingside: true,
+            black_castle_queenside: true,
         }
     }
 }

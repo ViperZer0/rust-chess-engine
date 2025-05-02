@@ -1,8 +1,8 @@
 use std::{collections::HashMap, fmt::Display};
 
-use crate::{bitboard::Bitboard, parse::MoveCommand};
+use crate::{bitboard::Bitboard, board::{PieceType, PlayerColor}, parse::MoveCommand};
 
-use super::{board_config::BoardConfigurationBuilder, error::MoveError, r#move::Move, BoardConfiguration, BoardResult, Piece, Square};
+use super::{board_config::BoardConfigurationBuilder, error::MoveError, r#move::Move, BoardConfiguration, BoardResult, CastlingAvailability, Piece, Square};
 mod board_moves;
 mod board_queries;
 
@@ -13,7 +13,7 @@ mod board_queries;
 /// maintain the internal state and not violate the rules of chess or anything. Boards are
 /// immutable: making moves on a board does not modify the existing board but instead returns a new
 /// one.
-#[derive(Clone)]
+#[derive(Default, Clone)]
 pub struct Board 
 {
     /// Tracks what piece is on a given square.
@@ -33,6 +33,13 @@ pub struct Board
     knight_pieces: Bitboard,
     bishop_pieces: Bitboard,
     pawn_pieces: Bitboard,
+
+    // Other board state stuff
+    active_color: PlayerColor,
+    castling_availability: CastlingAvailability,
+    en_passant_target_square: Option<Square>,
+    halfmove_clock: u8,
+    fullmove_number: u8,
 }
 
 impl Board {
@@ -65,13 +72,29 @@ impl Board {
     /// Takes a [BoardConfiguration] which represents the desired starting state of the board.
     pub fn new_board_with_configuration(board_configuration: &BoardConfiguration) -> Self
     {
-        todo!();
+        let mut new_board = Self::default();
+
+        // Add all pieces to the board, setting the state of all the bitboards accordingly
+        for (square, piece) in board_configuration.get_pieces().iter()
+        {
+            new_board.add_piece(*piece, square);
+        }
+
+        new_board
     }
+
 
     /// Gets the board configuration associated with the current board state.
     pub fn get_board_configuration(&self) -> BoardConfiguration
     {
-        todo!();
+        BoardConfiguration::new(
+            self.piece_mailbox.clone(),
+            self.active_color,
+            self.castling_availability,
+            self.en_passant_target_square,
+            self.halfmove_clock,
+            self.fullmove_number
+        )
     }
 
     /// Returns the current result of the board as a [BoardResult].
@@ -98,7 +121,7 @@ impl Board {
     /// If the square is occupied, this function returns a reference to the [Piece].
     pub fn get_piece(&self, square: &Square) -> Option<&Piece>
     {
-        todo!();
+        self.piece_mailbox.get(square)
     }
 
     /// Converts a [MoveCommand] into a [Move] that may or may not be legal.
@@ -222,10 +245,28 @@ impl Board {
     /// piece. This doesn't do any checks to see if the provided square is already occupied, and
     /// instead just forcibly overwrites the given location. This also doesn't move the given piece
     /// from its old location, so this function is intended to be used in conjunction with and
-    /// after [remove_piece].
+    /// after [Self::remove_piece].
+    ///
+    /// This also means that it doesn't check the state of the bitboards to ensure the state is
+    /// valid (i.e not more than one piece in a square.)
     fn add_piece(&mut self, piece: Piece, position: &Square)
     {
         self.piece_mailbox.insert(*position, piece);
+        let add_bitmask = Bitboard::from(*position);
+        match piece.color()
+        {
+            PlayerColor::White => self.white_pieces |= add_bitmask,
+            PlayerColor::Black => self.black_pieces |= add_bitmask,
+        }
+        match piece.piece_type()
+        {
+            PieceType::Pawn => self.pawn_pieces |= add_bitmask,
+            PieceType::Rook => self.rook_pieces |= add_bitmask,
+            PieceType::King => self.king_pieces |= add_bitmask,
+            PieceType::Queen => self.queen_pieces |= add_bitmask,
+            PieceType::Knight => self.knight_pieces |= add_bitmask,
+            PieceType::Bishop => self.bishop_pieces |= add_bitmask,
+        }
     }
 
     /// Erases a piece from the board.
@@ -238,6 +279,15 @@ impl Board {
     fn remove_piece(&mut self, position: &Square)
     {
         self.piece_mailbox.remove(position);
+        let remove_bitmask = !Bitboard::from(*position);
+        self.white_pieces &= remove_bitmask;
+        self.black_pieces &= remove_bitmask;
+        self.pawn_pieces &= remove_bitmask;
+        self.knight_pieces &= remove_bitmask;
+        self.bishop_pieces &= remove_bitmask;
+        self.rook_pieces &= remove_bitmask;
+        self.queen_pieces &= remove_bitmask;
+        self.king_pieces &= remove_bitmask;
     }
 }
 

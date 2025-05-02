@@ -34,6 +34,32 @@ impl Piece
             color,
         }
     }
+
+    /// Gets the [PieceType] of the piece.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let piece = Piece::new(PlayerColor::White, PieceType::Pawn);
+    /// assert_eq!(piece.piece_type(), PieceType::Pawn);
+    /// ```
+    pub fn piece_type(&self) -> PieceType
+    {
+        self.piece_type
+    }
+
+    /// Gets the [PlayerColor] of a piece.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let piece = Piece::new(PlayerColor::White, PieceType::Pawn);
+    /// assert_eq!(piece.color(), PlayerColor::White);
+    /// ```
+    pub fn color(&self) -> PlayerColor
+    {
+        self.color
+    }
 }
 
 impl Display for Piece

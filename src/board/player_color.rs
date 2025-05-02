@@ -10,6 +10,14 @@ pub enum PlayerColor
     Black,
 }
 
+impl Default for PlayerColor
+{
+    /// The default starting color is white.
+    fn default() -> Self {
+        PlayerColor::White
+    }
+}
+
 impl Not for PlayerColor
 {
     type Output = PlayerColor;
