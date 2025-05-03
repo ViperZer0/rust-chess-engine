@@ -222,7 +222,7 @@ mod tests
         let king_bitboard = board.query().piece_type(PieceType::King).result();
         assert_eq!(king_bitboard, Bitboard::new(0x1000_0000_0000_0010));
         let queen_bitboard = board.query().piece_type(PieceType::Queen).result();
-        assert_eq!(queen_bitboard, Bitboard::new(0x0800_0000_0000_0080));
+        assert_eq!(queen_bitboard, Bitboard::new(0x0800_0000_0000_0008));
         let pawn_bitboard = board.query().piece_type(PieceType::Pawn).result();
         assert_eq!(pawn_bitboard, Bitboard::new(0x00FF_0000_0000_FF00));
     }
