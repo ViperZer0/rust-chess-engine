@@ -434,6 +434,8 @@ impl Direction
 #[cfg(test)]
 mod tests
 {
+    use std::collections::HashSet;
+
     use super::*;
 
     #[test]
@@ -578,21 +580,23 @@ mod tests
         const AVAILABLE_ROOK_MOVES: usize = 14;
         let board = Board::new_blank_board();
         let rook_move_mask = board.rook_moves(PlayerColor::White, Square::new(0, 0));
-        let rook_squares: Vec<Square> = rook_move_mask.squares().collect();
+        let rook_squares: HashSet<Square> = rook_move_mask.squares().collect();
         assert_eq!(rook_squares.len(), AVAILABLE_ROOK_MOVES);
 
-        let mut expected_rook_squares: Vec<Square> = Vec::with_capacity(AVAILABLE_ROOK_MOVES);
+        let mut expected_rook_squares: HashSet<Square> = HashSet::with_capacity(AVAILABLE_ROOK_MOVES);
         for rank in 1..8
         {
-            expected_rook_squares.push(Square::new(rank,0));
+            expected_rook_squares.insert(Square::new(rank,0));
         }
 
         for file in 1..8
         {
-            expected_rook_squares.push(Square::new(0, file));
+            expected_rook_squares.insert(Square::new(0, file));
         }
 
+        // test if the two vectors have equal content.
         assert_eq!(rook_squares, expected_rook_squares);
+
     }
 
     #[test]
