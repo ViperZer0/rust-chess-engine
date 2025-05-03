@@ -596,7 +596,6 @@ mod tests
 
         // test if the two vectors have equal content.
         assert_eq!(rook_squares, expected_rook_squares);
-
     }
 
     #[test]

@@ -191,7 +191,7 @@ impl Board
     /// Helper function for [Self::get_move].
     fn parse_normal_move(&self, move_data: MoveCommandData) -> Result<Move, MoveError>
     {
-        let starting_squares = self.squares_of_type_that_can_move_to_square(move_data.piece_type(), move_data.target_square());
+        let starting_squares = self.squares_of_type_that_can_move_to_square(self.active_color, move_data.piece_type(), move_data.target_square(), move_data.is_capture());
         match (starting_squares.len(), move_data.discriminant())
         {
             (0, _) => Err(MoveError::NoPossibleMove),
@@ -227,6 +227,7 @@ impl Board
     ///
     /// # Arguments
     ///
+    /// * `piece_color` - The piece color to search for.
     /// * `piece_type` - The piece type to search for
     /// * `square` - The target square that is being moved to.
     ///
@@ -235,20 +236,23 @@ impl Board
     /// ```
     /// [TODO:write some example code]
     /// ```
-    fn squares_of_type_that_can_move_to_square(&self, piece_type: PieceType, square: Square) -> Vec<Square>
+    // Ugh I hate how stupid this function is getting... I need to figure out a better way to
+    // do this lol
+    fn squares_of_type_that_can_move_to_square(&self, piece_color: PlayerColor, piece_type: PieceType, square: Square, is_attack: bool) -> Vec<Square>
     {
-        let piece_map = self.pieces_of_type(piece_type) & self.pieces_of_color(self.active_color);
+        let piece_map = self.pieces_of_type(piece_type) & self.pieces_of_color(piece_color);
         let target_square_bitboard: Bitboard = square.into();
 
         // We pick one of the move types depending on what type of piece this is.
-        let move_type: fn(&Board, PlayerColor, Square) -> Bitboard = match piece_type
+        let move_type: fn(&Board, PlayerColor, Square) -> Bitboard = match (piece_type, is_attack)
         {
-            PieceType::Pawn => todo!(),
-            PieceType::Knight => Self::knight_moves,
-            PieceType::Bishop => Self::bishop_moves,
-            PieceType::Rook => Self::rook_moves,
-            PieceType::Queen => Self::queen_moves,
-            PieceType::King => Self::king_moves
+            (PieceType::Pawn, false) => todo!(),
+            (PieceType::Pawn, true) => todo!(),
+            (PieceType::Knight, _) => Self::knight_moves,
+            (PieceType::Bishop, _) => Self::bishop_moves,
+            (PieceType::Rook, _) => Self::rook_moves,
+            (PieceType::Queen, _) => Self::queen_moves,
+            (PieceType::King, _) => Self::king_moves
         };
         // Then we filter the moves down to only those pieces which can REACH the target square.
         // This could be no pieces, one piece (correct), or two pieces (needs to be filtered down
@@ -432,6 +436,55 @@ impl Board
             PieceType::Knight => &mut self.knight_pieces,
             PieceType::Bishop => &mut self.bishop_pieces,
         }
+    }
+
+    /// Returns true if the king is in check *on* the current board state.
+    ///
+    /// # Arguments
+    ///
+    /// * `king_color` - The color of the king to check for.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// [TODO:write some example code]
+    /// ```
+    fn is_king_in_check(&self, king_color: PlayerColor) -> bool
+    {
+        let king = self.query().color(king_color).piece_type(PieceType::King).result();
+        let king_square: Vec<Square> = king.squares().collect();
+        // This should always be true?
+        assert!(king_square.len() == 0);
+        let king_square = king_square[0];
+        // Check each piece type to see if any pieces are attacking the king's square.
+        let pawn_attacks = self.squares_of_type_that_can_move_to_square(!king_color, PieceType::Pawn, king_square, true);
+        if pawn_attacks.len() > 0
+        {
+            return true;
+        }
+        let knight_attacks = self.squares_of_type_that_can_move_to_square(!king_color, PieceType::Knight, king_square, true);
+        if knight_attacks.len() > 0
+        {
+            return true;
+        }
+
+        let bishop_attacks = self.squares_of_type_that_can_move_to_square(!king_color, PieceType::Bishop, king_square, true);
+        if bishop_attacks.len() > 0
+        {
+            return true;
+        }
+        let rook_attacks = self.squares_of_type_that_can_move_to_square(!king_color, PieceType::Rook, king_square, true);
+        if rook_attacks.len() > 0
+        {
+            return true;
+        }
+        let queen_attacks = self.squares_of_type_that_can_move_to_square(!king_color, PieceType::Rook, king_square, true);
+        if queen_attacks.len() > 0
+        {
+            return true;
+        }
+        // We shouldn't have to check for king attacks???
+        return false;
     }
 }
 
