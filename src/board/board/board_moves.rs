@@ -96,7 +96,7 @@ impl Board {
         let north_west_west = (knight_on_rank_6_or_lower & knight_on_file_c_to_h) << 6;
         let north_north_west = (knight_on_rank_5_or_lower & knight_on_file_b_to_h) << 15;
 
-        Bitboard::default() 
+        (Bitboard::default() 
             | north_north_east
             | north_east_east
             | south_east_east
@@ -104,7 +104,7 @@ impl Board {
             | south_south_west
             | south_west_west
             | north_west_west
-            | north_north_west
+            | north_north_west )
             // We exclude squares that are occupied by our own pieces.
             & !self.query().color(active_color).result()
     }
@@ -146,7 +146,7 @@ impl Board {
         let south = (king_on_rank_1_or_higher) >> 8;
         let south_west = (king_on_rank_1_or_higher & king_on_file_b_to_h) >> 9;
 
-        Bitboard::default() 
+        (Bitboard::default() 
             | north_east
             | north
             | north_west
@@ -154,7 +154,7 @@ impl Board {
             | west
             | south_east
             | south
-            | south_west
+            | south_west)
             // Check for occupancy
             & !self.query().color(active_color).result()
     }
