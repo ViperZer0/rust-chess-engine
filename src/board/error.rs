@@ -16,5 +16,5 @@ pub enum MoveError
     IllegalMove,
     /// The error returned when we found more than one possible move.
     #[error("Too many moves found that matched the command given! Do you need to add a discriminant?")]
-    TooManMoves,
+    TooManyMoves,
 }

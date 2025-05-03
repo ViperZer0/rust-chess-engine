@@ -127,6 +127,57 @@ pub struct MoveCommandData
     target_square: Square,
 }
 
+impl MoveCommandData
+{
+    /// Gets the inner piece type
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// [TODO:write some example code]
+    /// ```
+    pub const fn piece_type(&self) -> PieceType
+    {
+        self.piece_type
+    }
+
+    /// Gets the inner discriminant
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// [TODO:write some example code]
+    /// ```
+    pub const fn discriminant(&self) -> Option<Line>
+    {
+        self.discriminant
+    }
+
+    /// Gets whether or not this move is a capture
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// [TODO:write some example code]
+    /// ```
+    pub const fn is_capture(&self) -> bool
+    {
+        self.capture
+    }
+
+    /// Get the target move square
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// [TODO:write some example code]
+    /// ```
+    pub const fn target_square(&self) -> Square
+    {
+        self.target_square
+    }
+}
+
 impl FromStr for MoveCommand
 {
     type Err = NotationParseError;

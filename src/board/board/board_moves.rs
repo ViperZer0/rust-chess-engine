@@ -270,7 +270,6 @@ impl Board {
     }
 }
 
-
 // Returns a new square with rank and file incremented or decremented depending on the Direction
 // provided.
 fn increment_square_in_direction(square: &Square, direction: Direction) -> Option<Square>

@@ -6,6 +6,8 @@ use regex::Regex;
 
 use crate::{parse::{alphabetic_file_to_numeric, rank_to_numeric, NotationParseError}, UInt};
 
+use super::Square;
+
 /// A [Line] represents a specific rank, file, or both (i.e a square.)
 ///
 /// It is used as the discriminant for [crate::parse::MoveCommandData] when
@@ -22,6 +24,44 @@ pub enum Line {
     /// On the rare case that neither is enough to distinguish between two pieces, we CAN specify
     /// both I suppose.
     RankAndFile(UInt, UInt),
+}
+
+impl Line
+{
+    /// Returns true if a square lies along the specified line, false otherwise.
+    ///
+    /// # Arguments
+    ///
+    /// * `square` - A square to test against.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let line = Line::Rank(0)
+    /// assert!(line.has_square(Square::new(0,0)));
+    /// assert!(line.has_square(Square::new(0,7)));
+    /// assert!(!line.has_square(Square::new(1,3)));
+    ///
+    /// let line = Line::File(3)
+    /// assert!(line.has_square(Square::new(0, 3)));
+    /// assert!(line.has_square(Square::new(7, 3)));
+    /// assert!(!line.has_square(Square::new(4, 2)));
+    ///
+    /// let line = Line::RankAndFile(5,5);
+    /// assert!(line.has_square(Square::new(5, 5)));
+    /// assert!(!line.has_square(Square::new(4, 5)));
+    /// assert!(!line.has_square(Square::new(5, 6)));
+    /// assert!(!line.has_square(Square::new(6, 6)));
+    /// ```
+    pub fn has_square(&self, square: &Square) -> bool
+    {
+        match self
+        {
+            Self::Rank(rank) => square.rank == *rank,
+            Self::File(file) => square.file == *file,
+            Self::RankAndFile(rank, file) => square.rank == *rank && square.file == *file,
+        }
+    }
 }
 
 impl FromStr for Line

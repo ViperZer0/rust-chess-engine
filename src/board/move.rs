@@ -1,3 +1,7 @@
+use crate::parse::MoveCommandData;
+
+use super::{PieceType, Square};
+
 /// Represents a valid move on the board.
 ///
 /// This covers "normal" moves which includes captures and basically any moves other than castling,
@@ -33,4 +37,75 @@ pub enum Move
 /// Contains information about the move relevant to the [crate::board::Board]
 pub struct MoveData
 {
+    starting_square: Square,
+    capture: bool,
+    target_square: Square,
+}
+
+impl MoveData
+{
+    /// Constructs a new [MoveData]
+    ///
+    /// # Arguments
+    ///
+    /// * `piece_type` - The [PieceType]
+    /// * `starting_square` - The starting square that the piece is on
+    /// * `target_square` - The target square that the piece will end up on
+    /// * `capture` - Whether or not we are capturing an existing piece.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// [TODO:write some example code]
+    /// ```
+    pub const fn new(starting_square: Square, target_square: Square, capture: bool) -> Self
+    {
+        Self
+        {
+            starting_square,
+            capture,
+            target_square,
+        }
+    }
+
+    /// This function makes it slightly easier to construct a [MoveData] by taking a
+    /// [MoveCommandData] and reading its information internally. The only supplemental information
+    /// needed to construct a [MoveData], then, is what square the piece starts on, which is done
+    /// here by taking it as an argument.
+    ///
+    /// # Arguments
+    ///
+    /// * `move_command_data` - The [MoveCommandData] to convert to a [MoveData]
+    /// * `starting_square` - The starting square that the piece is on. This makes it so we only
+    /// have to search the board for possible starting pieces only once.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// [TODO:write some example code]
+    /// ```
+    pub fn from_move_command_data(move_command_data: &MoveCommandData, starting_square: Square) -> Self
+    {
+        Self
+        {
+            starting_square,
+            capture: move_command_data.is_capture(),
+            target_square: move_command_data.target_square(),
+        }
+    }
+
+    pub const fn starting_square(&self) -> Square
+    {
+        self.starting_square
+    }
+
+    pub const fn is_capture(&self) -> bool
+    {
+        self.capture
+    }
+
+    pub const fn target_square(&self) -> Square
+    {
+        self.target_square
+    }
 }

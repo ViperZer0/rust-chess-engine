@@ -481,6 +481,19 @@ impl Bitboard
         }
         new
     }
+
+    /// Returns true if a bitboard is all 0s, false otherwise.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// assert!(Bitboard::new(0).is_empty());
+    /// assert!(!Bitboard::new(1).is_empty());
+    /// ```
+    pub const fn is_empty(&self) -> bool
+    {
+        self.0 == 0
+    }
 }
 
 impl From<Square> for Bitboard
