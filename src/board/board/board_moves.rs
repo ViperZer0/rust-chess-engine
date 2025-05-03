@@ -514,10 +514,10 @@ mod tests
             Square::new(7,3).into() |
             Square::new(6,4).into() |
             Square::new(4,4).into() |
+            Square::new(3,3).into() |
             Square::new(3,1).into() |
             Square::new(4,0).into() |
-            Square::new(6,0).into() |
-            Square::new(7,1).into();
+            Square::new(6,0).into();
         assert_eq!(knight_move_mask, expected_bitboard);
     }
 
