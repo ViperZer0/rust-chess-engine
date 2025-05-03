@@ -633,7 +633,7 @@ mod tests
     fn bishop_moves_on_empty_board()
     {
         const AVAILABLE_BISHOP_MOVES: usize = 7;
-        let board = Board::new_default_starting_board();
+        let board = Board::new_blank_board();
         let bishop_move_mask = board.bishop_moves(PlayerColor::White, Square::new(0, 0));
         let bishop_squares: Vec<Square> = bishop_move_mask.squares().collect();
         assert_eq!(bishop_squares.len(), AVAILABLE_BISHOP_MOVES);
