@@ -155,6 +155,8 @@ impl Board {
             | south_east
             | south
             | south_west
+            // Check for occupancy
+            & !self.query().color(active_color).result()
     }
 
     /// Generates a bitmask of all valid squares that a queen can move to, taking into account
@@ -605,7 +607,7 @@ mod tests
     #[test]
     fn rook_moves_into_opponent_pieces_occupancy_check()
     {
-        const AVAILABLE_ROOK_MOVES: usize = 10;
+        const AVAILABLE_ROOK_MOVES: usize = 11;
         let board = Board::new_default_starting_board();
         let rook_move_mask = board.rook_moves(PlayerColor::White, Square::new(2, 0));
         let rook_squares: Vec<Square> = rook_move_mask.squares().collect();
