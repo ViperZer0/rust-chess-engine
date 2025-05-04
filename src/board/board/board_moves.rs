@@ -223,6 +223,84 @@ impl Board {
         self.moves_in_direction(active_color, from, DIRECTION_LEFT)
     }
 
+    /// Returns all valid squares that a pawn can move to. This is normally just the square
+    /// immediately in front of it. If a pawn is on the second or seventh rank (and is white or
+    /// black respectively), then it can move two spaces.
+    ///
+    /// This is specifically for regular pawn moves, NOT capturing.
+    ///
+    /// # Arguments
+    ///
+    /// * `active_color` - The color of the moving piece
+    /// * `from` - The square the piece is moving from.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// [TODO:write some example code]
+    /// ```
+    pub fn pawn_moves(&self, active_color: PlayerColor, from: Square) -> Bitboard
+    {
+        let can_move_two = match (active_color, from.rank)
+        {
+            (PlayerColor::White, 1) => Bitboard::new(u64::MAX),
+            (PlayerColor::Black, 6) => Bitboard::new(u64::MAX),
+            _ => Bitboard::new(0),
+        };
+
+        let result = match (active_color, from.rank)
+        {
+            // Pawn on the last or first rank can't actually move at all. But I actually don't know
+            // if that's even possible since those pawns should promote???? 
+            (PlayerColor::White, 7) => Bitboard::new(0),
+            (PlayerColor::Black, 0) => Bitboard::new(0),
+            // Move to the square one rank in front of the current square
+            (PlayerColor::White, _) => Bitboard::from(from) << 8
+                // We can also move to the square two ranks in front of the current square if
+                // `can_move_two` is enabled.
+                | (Bitboard::from(from) << 16 & can_move_two),
+            (PlayerColor::Black, _) => Bitboard::from(from) >> 8
+                | (Bitboard::from(from) >> 16 & can_move_two),
+        };
+
+        // We exclude ANY pieces, black or white, 
+        // that are in our way, bc pawns can't capture in front of themselves.
+        result & !self.query().result()
+    }
+
+
+    /// Returns all the squares that a given pawn can attack. This is the two squares immediately
+    /// in front of and to either side of the pawn. This function *does* take into account where
+    /// enemy pieces are, so will return a [Bitboard] with all bits set to 0 if the given square
+    /// does not attack any enemy pieces.
+    ///
+    /// # Arguments
+    ///
+    /// * `active_color` - The active side's piece color
+    /// * `from` - The square the pawn is moving from
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// [TODO:write some example code]
+    /// ```
+    pub fn pawn_attacks(&self, active_color: PlayerColor, from: Square) -> Bitboard
+    {
+        let up_right = Bitboard::from(from) << 9;
+        let up_left = Bitboard::from(from) << 7;
+        let down_right = Bitboard::from(from) >> 7;
+        let down_left = Bitboard::from(from) >> 9;
+
+        println!("{:?}", self.query().color(!active_color).result());
+        self.query().color(!active_color).result() & match active_color
+        {
+            PlayerColor::White => up_right & !Bitboard::file_mask(0) |
+                                  up_left & !Bitboard::file_mask(7),
+            PlayerColor::Black => down_right & !Bitboard::file_mask(0) |
+                                  down_left & !Bitboard::file_mask(7)
+        }
+    }
+
     /// Calculates available moves in a certain direction from a square,
     /// while taking into account occupancy (i.e squares that are blocked by other pieces)
     ///
@@ -658,5 +736,96 @@ mod tests
         let board = Board::new_default_starting_board();
         let bishop_move_mask = board.bishop_moves(PlayerColor::White, Square::new(0, 2));
         assert_eq!(bishop_move_mask, Bitboard::new(0));
+    }
+
+    #[test]
+    fn pawn_moves_can_move_forwards_two_on_starting_rank()
+    {
+        for file in 0..8
+        {
+            // Check white pawn
+            let board = Board::new_default_starting_board();
+            let pawn_move_mask = board.pawn_moves(PlayerColor::White, Square::new(1, file));
+            let expected_pawn_squares =
+                Bitboard::from(Square::new(2, file)) |
+                Square::new(3, file).into();
+            assert_eq!(pawn_move_mask, expected_pawn_squares);
+
+            // Check black pawn
+            let board = Board::new_default_starting_board();
+            let pawn_move_mask = board.pawn_moves(PlayerColor::Black, Square::new(6, file));
+            let expected_pawn_squares =
+                Bitboard::from(Square::new(5, file)) |
+                Square::new(4, file).into();
+            assert_eq!(pawn_move_mask, expected_pawn_squares);
+
+        }
+    }
+
+    #[test]
+    fn pawn_moves_can_not_move_forwards_two_on_non_starting_rank()
+    {
+        let board = Board::new_default_starting_board();
+        for file in 0..8
+        {
+            // Check white pawn
+            let pawn_move_mask = board.pawn_moves(PlayerColor::White, Square::new(2, file));
+            let expected_pawn_squares = Bitboard::from(Square::new(3, file));
+            assert_eq!(pawn_move_mask, expected_pawn_squares);
+
+            let pawn_move_mask = board.pawn_moves(PlayerColor::Black, Square::new(5, file));
+            let expected_pawn_squares = Bitboard::from(Square::new(4, file));
+            assert_eq!(pawn_move_mask, expected_pawn_squares);
+        }
+    }
+
+    #[test]
+    fn pawn_capture_on_a_or_h_file()
+    {
+        let board = Board::new_default_starting_board();
+
+        let pawn_move_mask = board.pawn_attacks(PlayerColor::White, Square::new(5, 0));
+        let expected_pawn_squares = Bitboard::from(Square::new(6, 1));
+        assert_eq!(pawn_move_mask, expected_pawn_squares);
+
+        let pawn_move_mask = board.pawn_attacks(PlayerColor::White, Square::new(5, 7));
+        let expected_pawn_squares = Bitboard::from(Square::new(6, 6));
+        assert_eq!(pawn_move_mask, expected_pawn_squares);
+
+        let pawn_move_mask = board.pawn_attacks(PlayerColor::Black, Square::new(2, 0));
+        let expected_pawn_squares = Bitboard::from(Square::new(1, 1));
+        assert_eq!(pawn_move_mask, expected_pawn_squares);
+
+        let pawn_move_mask = board.pawn_attacks(PlayerColor::Black, Square::new(2, 7));
+        let expected_pawn_squares = Bitboard::from(Square::new(1, 6));
+        assert_eq!(pawn_move_mask, expected_pawn_squares);
+    }
+
+    #[test]
+    fn pawn_capture_on_center_files()
+    {
+        let board = Board::new_default_starting_board();
+        for file in 1..7 
+        {
+            let pawn_move_mask = board.pawn_attacks(PlayerColor::White, Square::new(5, file));
+            let expected_pawn_squares = 
+                Bitboard::from(Square::new(6, file-1)) |
+                Square::new(6, file + 1).into();
+            assert_eq!(pawn_move_mask, expected_pawn_squares);
+
+            let pawn_move_mask = board.pawn_attacks(PlayerColor::Black, Square::new(2, file));
+            let expected_pawn_squares = 
+                Bitboard::from(Square::new(1, file-1)) |
+                Square::new(1, file + 1).into();
+            assert_eq!(pawn_move_mask, expected_pawn_squares);
+        }
+    }
+
+    #[test]
+    fn pawn_cant_capture_blank_squares()
+    {
+        let board = Board::new_default_starting_board();
+        let pawn_move_mask = board.pawn_attacks(PlayerColor::White, Square::new(3, 3));
+        assert_eq!(pawn_move_mask, Bitboard::new(0));
     }
 }
