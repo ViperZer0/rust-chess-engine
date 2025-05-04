@@ -2,6 +2,13 @@ use crate::parse::MoveCommandData;
 
 use super::{PieceType, Square};
 
+/// The direction the player is castling.
+pub enum CastlingDirection
+{
+    Kingside,
+    Queenside
+}
+
 /// Represents a valid move on the board.
 ///
 /// This covers "normal" moves which includes captures and basically any moves other than castling,
@@ -28,10 +35,8 @@ pub enum Move
     ///
     /// (Also probably won't include pawn promotions, which are currently unhandled)
     NormalMove(MoveData),
-    /// A kingside castle.
-    KingsideCastle,
-    /// A queenside castle.
-    QueensideCastle,
+    /// A castle.
+    Castle(CastlingDirection),
 }
 
 /// Contains information about the move relevant to the [crate::board::Board]

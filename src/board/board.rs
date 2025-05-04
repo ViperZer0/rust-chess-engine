@@ -1,10 +1,13 @@
 use std::{collections::HashMap, fmt::Display};
 
-use crate::{bitboard::Bitboard, board::{self, r#move::MoveData, PieceType, PlayerColor}, parse::{MoveCommand, MoveCommandData}};
+use crate::{bitboard::Bitboard, board::{PieceType, PlayerColor}, parse::MoveCommand};
 
-use super::{board_config::BoardConfigurationBuilder, error::MoveError, r#move::Move, BoardConfiguration, BoardResult, CastlingAvailability, Piece, Square};
-mod board_moves;
-mod board_queries;
+use super::{board_config::BoardConfigurationBuilder, error::MoveError, r#move::{CastlingDirection, Move}, BoardConfiguration, BoardResult, CastlingAvailability, Piece, Square};
+mod board_move;
+mod board_query;
+mod board_move_logic;
+mod board_move_checks;
+mod mut_get_bitboards;
 
 /// A given board state.
 ///
@@ -100,9 +103,8 @@ impl Board
         new_board
     }
 
-
     /// Gets the board configuration associated with the current board state.
-    pub fn get_board_configuration(&self) -> BoardConfiguration
+    pub fn board_configuration(&self) -> BoardConfiguration
     {
         BoardConfiguration::new(
             self.piece_mailbox.clone(),
@@ -118,7 +120,7 @@ impl Board
     ///
     /// This contains information about if the game is over (and who won) or if the game is still
     /// in progress.
-    pub fn get_game_result(&self) -> BoardResult
+    pub fn game_result(&self) -> BoardResult
     {
         todo!();
     }
@@ -136,7 +138,7 @@ impl Board
     ///
     /// If the square is currently empty, this function returns [None].
     /// If the square is occupied, this function returns a reference to the [Piece].
-    pub fn get_piece(&self, square: &Square) -> Option<&Piece>
+    pub fn piece_at(&self, square: &Square) -> Option<&Piece>
     {
         self.piece_mailbox.get(square)
     }
@@ -182,84 +184,10 @@ impl Board
     {
         match move_command
         {
-            MoveCommand::KingsideCastle => Ok(Move::KingsideCastle),
-            MoveCommand::QueensideCastle => Ok(Move::QueensideCastle),
+            MoveCommand::KingsideCastle => Ok(Move::Castle(CastlingDirection::Kingside)),
+            MoveCommand::QueensideCastle => Ok(Move::Castle(CastlingDirection::Queenside)),
             MoveCommand::NormalMove(data) => self.parse_normal_move(data),
         }
-    }
-
-    /// Helper function for [Self::get_move].
-    fn parse_normal_move(&self, move_data: MoveCommandData) -> Result<Move, MoveError>
-    {
-        let starting_squares = self.squares_of_type_that_can_move_to_square(self.active_color, move_data.piece_type(), move_data.target_square(), move_data.is_capture());
-        match (starting_squares.len(), move_data.discriminant())
-        {
-            (0, _) => Err(MoveError::NoPossibleMove),
-            (1, _) => Ok(Move::NormalMove(
-                    MoveData::from_move_command_data(&move_data, starting_squares[0])
-            )),
-            // Cover having too many pieces!
-            (2.., Some(discriminant)) => {
-                // If we do have a discriminant, try and use it to further filter down which square
-                // we are moving from.
-                let starting_squares: Vec<&Square> = starting_squares.iter().filter(|square| discriminant.has_square(square)).collect();
-                match starting_squares.len()
-                {
-                    0 => Err(MoveError::NoPossibleMove),
-                    1 => Ok(Move::NormalMove(
-                            MoveData::from_move_command_data(&move_data, *starting_squares[0])
-                    )),
-                    _ => Err(MoveError::TooManyMoves),
-                }
-            },
-            (2.., None) => Err(MoveError::TooManyMoves)
-        }
-    }
-
-    /// Gets all of the pieces of a type that can move to a given square.
-    ///
-    /// Since we know from a [MoveCommand] what piece is being moved and where it is being moved
-    /// to, but not where it is being moved from, we have to return a list of all pieces to be
-    /// filtered down according to a discriminant if there is more than one.
-    ///
-    /// This function actually returns the SQUARES of all valid pieces that can move to that
-    /// square, given they are of the right type and all.
-    ///
-    /// # Arguments
-    ///
-    /// * `piece_color` - The piece color to search for.
-    /// * `piece_type` - The piece type to search for
-    /// * `square` - The target square that is being moved to.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// [TODO:write some example code]
-    /// ```
-    // Ugh I hate how stupid this function is getting... I need to figure out a better way to
-    // do this lol
-    fn squares_of_type_that_can_move_to_square(&self, piece_color: PlayerColor, piece_type: PieceType, square: Square, is_attack: bool) -> Vec<Square>
-    {
-        let piece_map = self.pieces_of_type(piece_type) & self.pieces_of_color(piece_color);
-        let target_square_bitboard: Bitboard = square.into();
-
-        // We pick one of the move types depending on what type of piece this is.
-        let move_type: fn(&Board, PlayerColor, Square) -> Bitboard = match (piece_type, is_attack)
-        {
-            (PieceType::Pawn, false) => todo!(),
-            (PieceType::Pawn, true) => todo!(),
-            (PieceType::Knight, _) => Self::knight_moves,
-            (PieceType::Bishop, _) => Self::bishop_moves,
-            (PieceType::Rook, _) => Self::rook_moves,
-            (PieceType::Queen, _) => Self::queen_moves,
-            (PieceType::King, _) => Self::king_moves
-        };
-        // Then we filter the moves down to only those pieces which can REACH the target square.
-        // This could be no pieces, one piece (correct), or two pieces (needs to be filtered down
-        // by discriminant.
-        piece_map.squares().filter(
-            |square| !(move_type(&self, self.active_color, *square) & target_square_bitboard).is_empty()
-        ).collect()
     }
 
     /// Checks whether or not a move is legal. Because we consume a valid [Move], we know that the
@@ -293,7 +221,6 @@ impl Board
     /// ```
     fn check_move(&self, attempted_move: Move) -> bool 
     {
-        todo!()
     }
 
     /// Consumes a move and returns a new board where the move has been made.
@@ -336,8 +263,8 @@ impl Board
     {
         match r#move
         {
-            Move::KingsideCastle => todo!(),
-            Move::QueensideCastle => todo!(),
+            Move::Castle(CastlingDirection::Kingside) => todo!(),
+            Move::Castle(CastlingDirection::Queenside) => todo!(),
             Move::NormalMove(move_data) => {
                 let piece = self.remove_piece(&move_data.starting_square());
                 let piece = piece.expect("There was no piece at the starting square!");
@@ -394,50 +321,6 @@ impl Board
         piece
     }
 
-    fn pieces_of_color(&self, color: PlayerColor) -> Bitboard
-    {
-        match color
-        {
-            PlayerColor::White => self.white_pieces,
-            PlayerColor::Black => self.black_pieces,
-        }
-    }
-
-    fn pieces_of_color_as_mut(&mut self, color: PlayerColor) -> &mut Bitboard
-    {
-        match color
-        {
-            PlayerColor::White => &mut self.white_pieces,
-            PlayerColor::Black => &mut self.black_pieces,
-        }
-    }
-
-    fn pieces_of_type(&self, piece_type: PieceType) -> Bitboard
-    {
-        match piece_type
-        {
-            PieceType::Pawn => self.pawn_pieces,
-            PieceType::Rook => self.rook_pieces,
-            PieceType::King => self.king_pieces,
-            PieceType::Queen => self.queen_pieces,
-            PieceType::Knight => self.knight_pieces,
-            PieceType::Bishop => self.bishop_pieces,
-        }
-    }
-
-    fn pieces_of_type_as_mut(&mut self, piece_type: PieceType) -> &mut Bitboard
-    {
-        match piece_type
-        {
-            PieceType::Pawn => &mut self.pawn_pieces,
-            PieceType::Rook => &mut self.rook_pieces,
-            PieceType::King => &mut self.king_pieces,
-            PieceType::Queen => &mut self.queen_pieces,
-            PieceType::Knight => &mut self.knight_pieces,
-            PieceType::Bishop => &mut self.bishop_pieces,
-        }
-    }
-
     /// Returns true if the king is in check *on* the current board state.
     ///
     /// # Arguments
@@ -457,28 +340,28 @@ impl Board
         assert!(king_square.len() == 0);
         let king_square = king_square[0];
         // Check each piece type to see if any pieces are attacking the king's square.
-        let pawn_attacks = self.squares_of_type_that_can_move_to_square(!king_color, PieceType::Pawn, king_square, true);
+        let pawn_attacks = self.squares_of_type_that_can_capture_square(!king_color, PieceType::Pawn, king_square);
         if pawn_attacks.len() > 0
         {
             return true;
         }
-        let knight_attacks = self.squares_of_type_that_can_move_to_square(!king_color, PieceType::Knight, king_square, true);
+        let knight_attacks = self.squares_of_type_that_can_capture_square(!king_color, PieceType::Knight, king_square);
         if knight_attacks.len() > 0
         {
             return true;
         }
 
-        let bishop_attacks = self.squares_of_type_that_can_move_to_square(!king_color, PieceType::Bishop, king_square, true);
+        let bishop_attacks = self.squares_of_type_that_can_capture_square(!king_color, PieceType::Bishop, king_square);
         if bishop_attacks.len() > 0
         {
             return true;
         }
-        let rook_attacks = self.squares_of_type_that_can_move_to_square(!king_color, PieceType::Rook, king_square, true);
+        let rook_attacks = self.squares_of_type_that_can_capture_square(!king_color, PieceType::Rook, king_square);
         if rook_attacks.len() > 0
         {
             return true;
         }
-        let queen_attacks = self.squares_of_type_that_can_move_to_square(!king_color, PieceType::Rook, king_square, true);
+        let queen_attacks = self.squares_of_type_that_can_capture_square(!king_color, PieceType::Rook, king_square);
         if queen_attacks.len() > 0
         {
             return true;
@@ -551,7 +434,7 @@ mod tests
         let move_command = MoveCommand::from_str("e4").unwrap();
         let new_board = board.attempt_move(move_command).unwrap();
         let expected_new_board_config = BoardConfiguration::from_str("rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1").unwrap();
-        assert_eq!(expected_new_board_config, new_board.get_board_configuration());
+        assert_eq!(expected_new_board_config, new_board.board_configuration());
     }
 
     #[test]
@@ -613,7 +496,7 @@ mod tests
     {
         let board = Board::new_default_starting_board();
         let new_board = board.clone();
-        assert_eq!(board.get_board_configuration(), new_board.get_board_configuration());
+        assert_eq!(board.board_configuration(), new_board.board_configuration());
     }
 
     #[test]
@@ -622,14 +505,14 @@ mod tests
         let board_config = BoardConfiguration::from_str("q7/8/8/8/8/8/1Q6/1K6 w - - 0 1").unwrap();
         let board = Board::new_board_with_configuration(&board_config);
         let new_board = board.clone();
-        assert_eq!(board_config, new_board.get_board_configuration());
+        assert_eq!(board_config, new_board.board_configuration());
     }
 
     #[test]
     fn initialize_board_in_progress()
     {
         let board = Board::new_default_starting_board();
-        assert!(board.get_game_result().is_in_progress());
+        assert!(board.game_result().is_in_progress());
     }
 
     #[test]
@@ -637,9 +520,9 @@ mod tests
     {
         let board_config= BoardConfiguration::from_str("3k4/3Q4/3K4/8/8/8/8/8 b - - 0 1").unwrap();
         let board = Board::new_board_with_configuration(&board_config);
-        assert!(board.get_game_result().is_over());
-        assert!(!board.get_game_result().is_draw());
-        assert_eq!(PlayerColor::White, board.get_game_result().get_winner().unwrap());
+        assert!(board.game_result().is_over());
+        assert!(!board.game_result().is_draw());
+        assert_eq!(PlayerColor::White, board.game_result().get_winner().unwrap());
     }
 
     #[test]
@@ -649,9 +532,9 @@ mod tests
         let board = Board::new_board_with_configuration(&board_config);
         let r#move = MoveCommand::from_str("Qd7").unwrap();
         let new_board = board.attempt_move(r#move).unwrap();
-        assert!(new_board.get_game_result().is_over());
-        assert!(!new_board.get_game_result().is_draw());
-        assert_eq!(PlayerColor::White, new_board.get_game_result().get_winner().unwrap());
+        assert!(new_board.game_result().is_over());
+        assert!(!new_board.game_result().is_draw());
+        assert_eq!(PlayerColor::White, new_board.game_result().get_winner().unwrap());
     }
 
     #[test]
@@ -660,10 +543,10 @@ mod tests
         let mut board = Board::new_blank_board();
         let square = Square::new(0, 0);
         let new_piece = Piece::new(PlayerColor::White, PieceType::Pawn);
-        assert!(board.get_piece(&square).is_none());
+        assert!(board.piece_at(&square).is_none());
         board.add_piece(new_piece, &square);
-        assert!(board.get_piece(&square).is_some());
-        assert_eq!(new_piece, *board.get_piece(&square).unwrap());
+        assert!(board.piece_at(&square).is_some());
+        assert_eq!(new_piece, *board.piece_at(&square).unwrap());
     }
 
     #[test]
@@ -671,9 +554,9 @@ mod tests
     {
         let mut board = Board::new_default_starting_board();
         let square = Square::new(0, 0);
-        assert!(board.get_piece(&square).is_some());
+        assert!(board.piece_at(&square).is_some());
         board.remove_piece(&square);
-        assert!(board.get_piece(&square).is_none());
+        assert!(board.piece_at(&square).is_none());
     }
 
     #[test]
@@ -716,7 +599,7 @@ mod tests
         let board = Board::new_default_starting_board();
         for (square_str, piece) in squares_to_pieces
         {
-            let result = board.get_piece(&Square::from_str(square_str).unwrap());
+            let result = board.piece_at(&Square::from_str(square_str).unwrap());
             assert!(result.is_some());
             assert_eq!(piece, *result.unwrap());
         }

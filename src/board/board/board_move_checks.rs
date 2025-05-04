@@ -1,0 +1,86 @@
+//! This is a helper module for [board](super) that handles checking whether a given [Move]
+//! is legal or not.
+
+use crate::board::{Move, PlayerColor, Square};
+
+use super::Board;
+
+impl Board
+{
+    /// Checks if a given [Move] would leave the current player's king in check after it.
+    /// 
+    /// This covers both leaving a king in check (bad) and putting a king into check (bad).
+    ///
+    /// Returns true if the move is illegal/ends up putting the king in check, false otherwise.
+    ///
+    /// # Arguments
+    ///
+    /// * `r#move` - The attempted move.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// [TODO:write some example code]
+    /// ```
+    pub fn move_leaves_king_in_check(&self, r#move: Move) -> bool
+    {
+        // Attempt to make the move on the board and see if the king would be in check.
+        // If so, returns true. Otherwise returns false.
+        let theoretical_next_board = self.make_move(r#move);
+        // The active color here is the player on the CURRENT board, not the next board.
+        // If white moves, we check to see if their king is still in check on the next board.
+        theoretical_next_board.is_king_in_check(self.active_color)
+    }
+
+    /// Checks whether the king moves through check if it kingside castled right now.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// [TODO:write some example code]
+    /// ```
+    pub fn kingside_castle_moves_through_check(&self) -> bool
+    {
+        let castling_squares = vec![Square::new(0, 4), Square::new(0, 5), Square::new(0, 6)];
+        self.check_squares_for_attack(&castling_squares)
+    }
+
+    /// Checks whether the king would move through check if it queenside castled right now.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// [TODO:write some example code]
+    /// ```
+    pub fn queenside_castle_moves_through_check(&self) -> bool
+    {
+        let castling_squares = vec![Square::new(0, 4), Square::new(0, 3), Square::new(0, 2)];
+        self.check_squares_for_attack(&castling_squares)
+    }
+
+    /// Returns true if the given side can castle in the given direction, false otherwise.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// [TODO:write some example code]
+    /// ```
+    pub fn has_castled_already(&self, color: PlayerColor) -> bool
+    {
+        todo!()
+    }
+
+    fn check_squares_for_attack(&self, check_squares: &[Square]) -> bool
+    {
+        for square in check_squares
+        {
+            // We check the OPPOSITE color from the side currently moving 
+            if !self.all_squares_that_can_capture_square(!self.active_color, *square).is_empty()
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
+}
