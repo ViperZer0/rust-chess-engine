@@ -39,9 +39,14 @@ impl Board
     /// ```
     /// [TODO:write some example code]
     /// ```
-    pub fn kingside_castle_moves_through_check(&self) -> bool
+    pub fn kingside_castle_moves_through_check(&self, moving_color: PlayerColor) -> bool
     {
-        let castling_squares = vec![Square::new(0, 4), Square::new(0, 5), Square::new(0, 6)];
+        let rank = match moving_color 
+        {
+            PlayerColor::White => 0,
+            PlayerColor::Black => 7,
+        };
+        let castling_squares = vec![Square::new(rank, 4), Square::new(rank, 5), Square::new(rank, 6)];
         self.check_squares_for_attack(&castling_squares)
     }
 
@@ -52,9 +57,14 @@ impl Board
     /// ```
     /// [TODO:write some example code]
     /// ```
-    pub fn queenside_castle_moves_through_check(&self) -> bool
+    pub fn queenside_castle_moves_through_check(&self, moving_color: PlayerColor) -> bool
     {
-        let castling_squares = vec![Square::new(0, 4), Square::new(0, 3), Square::new(0, 2)];
+        let rank = match moving_color
+        {
+            PlayerColor::White => 0,
+            PlayerColor::Black => 7,
+        };
+        let castling_squares = vec![Square::new(rank, 4), Square::new(rank, 3), Square::new(rank, 2)];
         self.check_squares_for_attack(&castling_squares)
     }
 

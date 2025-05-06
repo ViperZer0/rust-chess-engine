@@ -233,6 +233,7 @@ impl Board
         //    king in check on the next board.
         if self.move_leaves_king_in_check(attempted_move)
         {
+            println!("Leaves king in check");
             return false;
         }
 
@@ -242,15 +243,17 @@ impl Board
         {
             Move::Castle(CastlingDirection::Kingside) => 
             {
-                if self.kingside_castle_moves_through_check()
+                if self.kingside_castle_moves_through_check(self.active_color)
                 {
+                    println!("Moves king through check");
                     return false;
                 }
             },
             Move::Castle(CastlingDirection::Queenside) =>
             {
-                if self.queenside_castle_moves_through_check()
+                if self.queenside_castle_moves_through_check(self.active_color)
                 {
+                    println!("Moves king through check");
                     return false;
                 }
             },
@@ -312,8 +315,8 @@ impl Board
                 };
                 let (king_to_file, rook_from_file, rook_to_file) = match direction
                 {
-                    CastlingDirection::Kingside => (6, 0, 5),
-                    CastlingDirection::Queenside => (2, 7, 3),
+                    CastlingDirection::Kingside => (6, 7, 5),
+                    CastlingDirection::Queenside => (2, 0, 3),
                 };
                 let king = self.remove_piece(&Square::new(rank, 4)).expect("Expected king to be on starting square for castling.");
                 let rook = self.remove_piece(&Square::new(rank, rook_from_file)).expect("Expected rook to be on starting square for castling.");

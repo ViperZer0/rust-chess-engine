@@ -744,4 +744,53 @@ mod tests
         let board_config = BoardConfiguration::from_str("rnbqkbnF/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KWkq - 0 1");
         assert!(board_config.is_err());
     }
+
+    #[test]
+    fn castling_availability_parse_1()
+    {
+        let castling_availability = CastlingAvailability::from_str("KQkq").unwrap();
+        assert_eq!(castling_availability, CastlingAvailability::new(true, true, true, true));
+    }
+
+    #[test]
+    fn castling_availability_parse_2()
+    {
+        let castling_availability = CastlingAvailability::from_str("KQk").unwrap();
+        assert_eq!(castling_availability, CastlingAvailability::new(true, true, true, false));
+    }
+
+    #[test]
+    fn castling_availability_parse_3()
+    {
+        let castling_availability = CastlingAvailability::from_str("KQ").unwrap();
+        assert_eq!(castling_availability, CastlingAvailability::new(true, true, false, false));
+    }
+
+    #[test]
+    fn castling_availability_parse_4()
+    {
+        let castling_availability = CastlingAvailability::from_str("Kk").unwrap();
+        assert_eq!(castling_availability, CastlingAvailability::new(true, false, true, false));
+    }
+
+    #[test]
+    fn castling_availability_parse_5()
+    {
+        let castling_availability = CastlingAvailability::from_str("kq").unwrap();
+        assert_eq!(castling_availability, CastlingAvailability::new(false, false, true, true));
+    }
+
+    #[test]
+    fn castling_availability_parse_6()
+    {
+        let castling_availability = CastlingAvailability::from_str("-").unwrap();
+        assert_eq!(castling_availability, CastlingAvailability::new(false, false, false, false));
+    }
+    
+    #[test]
+    fn castling_availability_fail()
+    {
+        let castling_availability = CastlingAvailability::from_str(":");
+        assert!(castling_availability.is_err());
+    }
 }
