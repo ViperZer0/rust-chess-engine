@@ -132,7 +132,7 @@ impl CastlingAvailability
     /// ```
     /// [TODO:write some example code]
     /// ```
-    pub fn update_with_move(&mut self, moving_color: PlayerColor, r#move: Move)
+    pub fn update_with_move(&mut self, moving_color: PlayerColor, r#move: &Move)
     {
         match (moving_color, r#move)
         {
@@ -168,8 +168,7 @@ impl CastlingAvailability
                     {
                         self.white_castle_kingside = false;
                         self.white_castle_queenside = false;
-                    }
-
+                    },
                     (PlayerColor::Black, Square { rank: 7, file: 0 }) => 
                     {
                         self.black_castle_queenside = false;

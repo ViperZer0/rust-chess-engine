@@ -302,8 +302,28 @@ impl Board
     {
         match r#move
         {
-            Move::Castle(CastlingDirection::Kingside) => todo!(),
-            Move::Castle(CastlingDirection::Queenside) => todo!(),
+            Move::Castle(direction) => {
+                // We hard code the castling squares. At some point we may want to not do this, but
+                // idk what that looks like at allll.
+                let rank = match self.active_color
+                {
+                    PlayerColor::White => 0,
+                    PlayerColor::Black => 7,
+                };
+                let (king_to_file, rook_from_file, rook_to_file) = match direction
+                {
+                    CastlingDirection::Kingside => (6, 0, 5),
+                    CastlingDirection::Queenside => (2, 7, 3),
+                };
+                let king = self.remove_piece(&Square::new(rank, 4)).expect("Expected king to be on starting square for castling.");
+                let rook = self.remove_piece(&Square::new(rank, rook_from_file)).expect("Expected rook to be on starting square for castling.");
+                self.add_piece(king, &Square::new(rank, king_to_file));
+                self.add_piece(rook, &Square::new(rank, rook_to_file));
+
+                // Castles count as non-captures/pawn moves, so we increment the halfmove clock
+                self.halfmove_clock += 1;
+
+            }
             Move::NormalMove(move_data) => {
                 let piece = self.remove_piece(&move_data.starting_square());
                 let piece = piece.expect("There was no piece at the starting square!");
@@ -312,11 +332,29 @@ impl Board
                     self.remove_piece(&move_data.target_square());
                 }
                 self.add_piece(piece, &move_data.target_square());
+
+                // Check to see if we increment the halfmove_clock.
+                match (piece.piece_type(), move_data.is_capture())
+                {
+                    // If we are moving a pawn we reset the halfmove clock
+                    (PieceType::Pawn, _) => { self.halfmove_clock = 0 },
+                    // If we are capturing we reset the halfmove clock
+                    (_, true) => { self.halfmove_clock = 0 },
+                    // Otherwise we increment the halfmove clock.
+                    _ => { self.halfmove_clock += 1 },
+                }
             },
         };
+        // Increment fullmove number
+        match self.active_color
+        {
+            PlayerColor::Black => { self.fullmove_number += 1; }
+            PlayerColor::White => (),
+        };
+        // We also want to disable future castling for that player.
+        self.castling_availability.update_with_move(self.active_color, r#move);
         // Switch to next player
         self.active_color = !self.active_color;
-        // We'll also want to increment the halfmove clock and stuff...
     }
 
     /// Adds a piece onto the board in the set position.
@@ -465,7 +503,7 @@ mod tests
 {
     use std::str::FromStr;
 
-    use crate::{board::{BoardConfiguration, Piece, PieceType, PlayerColor, Square}, parse::MoveCommand};
+    use crate::{board::{BoardConfiguration, Piece, PieceType, PlayerColor, Square}, hashmap_diff::print_hashmap_differences, parse::MoveCommand};
 
     use super::Board;
 
@@ -671,7 +709,9 @@ mod tests
         let board = Board::new_board_with_configuration(&BoardConfiguration::from_str("r1bqk1nr/pppp1ppp/2n5/2b1p3/2B1P3/5N2/PPPP1PPP/RNBQK2R w KQkq - 4 4").unwrap());
         let castle_move = MoveCommand::from_str("O-O").unwrap();
         let new_board = board.attempt_move(&castle_move).unwrap();
-        assert_eq!(new_board.board_configuration(), BoardConfiguration::from_str("r1bqk1nr/pppp1ppp/2n5/2b1p3/2B1P3/5N2/PPPP1PPP/RNBQ1RK1 b kq - 5 4").unwrap());
+        let expected_board_configuration = BoardConfiguration::from_str("r1bqk1nr/pppp1ppp/2n5/2b1p3/2B1P3/5N2/PPPP1PPP/RNBQ1RK1 b kq - 5 4").unwrap();
+        print_hashmap_differences(new_board.board_configuration().pieces(), expected_board_configuration.pieces());
+        assert_eq!(new_board.board_configuration(),expected_board_configuration);
         assert_eq!(new_board.piece_at(&Square::new(0, 5)).unwrap().piece_type(), PieceType::Rook);
         assert_eq!(new_board.piece_at(&Square::new(0, 6)).unwrap().piece_type(), PieceType::King);
     }
