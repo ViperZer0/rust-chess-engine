@@ -664,4 +664,86 @@ mod tests
 
         assert_eq!(default_board_str, format!("{}", board));
     }
+
+    #[test]
+    fn test_white_castle_kingside()
+    {
+        let board = Board::new_board_with_configuration(&BoardConfiguration::from_str("r1bqk1nr/pppp1ppp/2n5/2b1p3/2B1P3/5N2/PPPP1PPP/RNBQK2R w KQkq - 4 4").unwrap());
+        let castle_move = MoveCommand::from_str("O-O").unwrap();
+        let new_board = board.attempt_move(&castle_move).unwrap();
+        assert_eq!(new_board.board_configuration(), BoardConfiguration::from_str("r1bqk1nr/pppp1ppp/2n5/2b1p3/2B1P3/5N2/PPPP1PPP/RNBQ1RK1 b kq - 5 4").unwrap());
+        assert_eq!(new_board.piece_at(&Square::new(0, 5)).unwrap().piece_type(), PieceType::Rook);
+        assert_eq!(new_board.piece_at(&Square::new(0, 6)).unwrap().piece_type(), PieceType::King);
+    }
+
+    #[test]
+    fn test_black_castle_kingside()
+    {
+        let board = Board::new_board_with_configuration(&BoardConfiguration::from_str("r1bqk2r/pppp1ppp/2n2n2/2b1p3/2B1P3/3P1N2/PPP2PPP/RNBQ1RK1 b kq - 0 5").unwrap());
+        let castle_move = MoveCommand::from_str("O-O").unwrap();
+        let new_board = board.attempt_move(&castle_move).unwrap();
+        assert_eq!(new_board.board_configuration(), BoardConfiguration::from_str("r1bq1rk1/pppp1ppp/2n2n2/2b1p3/2B1P3/3P1N2/PPP2PPP/RNBQ1RK1 w - - 1 6").unwrap());
+        assert_eq!(new_board.piece_at(&Square::new(7, 5)).unwrap().piece_type(), PieceType::Rook);
+        assert_eq!(new_board.piece_at(&Square::new(7, 6)).unwrap().piece_type(), PieceType::King);
+    }
+
+    #[test]
+    fn test_white_castle_queenside()
+    {
+        let board = Board::new_board_with_configuration(&BoardConfiguration::from_str("rnb1k2r/pppqbppp/4pn2/3p4/3P1B2/2P1P3/PPQN1PPP/R3KBNR w KQkq - 5 7").unwrap());
+        let castle_move = MoveCommand::from_str("O-O-O").unwrap();
+        let new_board = board.attempt_move(&castle_move).unwrap();
+        assert_eq!(new_board.board_configuration(), BoardConfiguration::from_str("rnb1k2r/pppqbppp/4pn2/3p4/3P1B2/2P1P3/PPQN1PPP/2KR1BNR b kq - 6 7").unwrap());
+        assert_eq!(new_board.piece_at(&Square::new(0, 3)).unwrap().piece_type(), PieceType::Rook);
+        assert_eq!(new_board.piece_at(&Square::new(0, 2)).unwrap().piece_type(), PieceType::King);
+    }
+
+    #[test]
+    fn test_black_castle_queenside()
+    {
+        let board = Board::new_board_with_configuration(&BoardConfiguration::from_str("r3k2r/pp1bbppp/2nqpn2/2ppN3/3P4/2PBP3/PPQN1PPP/2KR3R b kq - 3 11").unwrap());
+        let castle_move = MoveCommand::from_str("O-O-O").unwrap();
+        let new_board = board.attempt_move(&castle_move).unwrap();
+        assert_eq!(new_board.board_configuration(), BoardConfiguration::from_str("2kr3r/pp1bbppp/2nqpn2/2ppN3/3P4/2PBP3/PPQN1PPP/2KR3R w - - 4 12").unwrap());
+        assert_eq!(new_board.piece_at(&Square::new(7, 3)).unwrap().piece_type(), PieceType::Rook);
+        assert_eq!(new_board.piece_at(&Square::new(7, 2)).unwrap().piece_type(), PieceType::King);
+    }
+
+    #[test]
+    fn white_move_increments_halfmove_clock_but_not_fullmove_number()
+    {
+        let board = Board::new_default_starting_board();
+        let r#move = MoveCommand::from_str("Nc3").unwrap();
+        let new_board = board.attempt_move(&r#move).unwrap();
+        assert_eq!(1, new_board.board_configuration().halfmove_clock());
+        assert_eq!(1, new_board.board_configuration().fullmove_number());
+    }
+
+    #[test]
+    fn black_move_increment_halfmove_clock_and_fullmove_number()
+    {
+        let board = Board::new_board_with_configuration(&BoardConfiguration::from_str("rnbqkbnr/pppppppp/8/8/8/2N5/PPPPPPPP/R1BQKBNR b KQkq - 1 1").unwrap());
+        let r#move = MoveCommand::from_str("Nf6").unwrap();
+        let new_board = board.attempt_move(&r#move).unwrap();
+        assert_eq!(2, new_board.board_configuration().halfmove_clock());
+        assert_eq!(2, new_board.board_configuration().fullmove_number());
+    }
+
+    #[test]
+    fn pawn_move_resets_halfmove_clock()
+    {
+        let board = Board::new_board_with_configuration(&BoardConfiguration::from_str("rnbqkb1r/pppppppp/5n2/8/8/2N5/PPPPPPPP/R1BQKBNR w KQkq - 2 2").unwrap());
+        let r#move = MoveCommand::from_str("e4").unwrap();
+        let new_board = board.attempt_move(&r#move).unwrap();
+        assert_eq!(0, new_board.board_configuration().halfmove_clock());
+    }
+
+    #[test]
+    fn capture_resets_halfmove_clock()
+    {
+        let board = Board::new_board_with_configuration(&BoardConfiguration::from_str("rnbqkb1r/pppppppp/5n2/8/4N3/8/PPPPPPPP/R1BQKBNR b KQkq - 3 2").unwrap());
+        let r#move = MoveCommand::from_str("Nxe4").unwrap();
+        let new_board = board.attempt_move(&r#move).unwrap();
+        assert_eq!(0, new_board.board_configuration().halfmove_clock());
+    }
 }
