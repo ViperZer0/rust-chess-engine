@@ -1,9 +1,10 @@
 use std::{collections::HashMap, fmt::Display};
 use std::str::FromStr;
 
+use getset::{CopyGetters, Getters};
 use thiserror::Error;
 
-use super::{Piece, PieceType, PlayerColor, Square};
+use super::{Move, Piece, PieceType, PlayerColor, Square};
 
 /// A specified arrangement of pieces.
 ///
@@ -16,15 +17,21 @@ use super::{Piece, PieceType, PlayerColor, Square};
 /// - Halfmoves (used to track fifty-move rule)
 ///     - Number of moves since last capture or pawn advance.
 /// - Fullmoves
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Getters, CopyGetters)]
 pub struct BoardConfiguration
 {
     // I'm not sure if a vec or a hashmap is better here.
+    #[getset(get="pub")]
     pieces: HashMap<Square, Piece>,
+    #[getset(get_copy="pub")]
     active_color: PlayerColor,
+    #[getset(get_copy="pub")]
     castling_availability: CastlingAvailability,
+    #[getset(get_copy="pub")]
     en_passant_target_square: Option<Square>,
+    #[getset(get_copy="pub")]
     halfmove_clock: u8,
+    #[getset(get_copy="pub")]
     fullmove_number: u8,
 }
 
@@ -41,12 +48,16 @@ pub struct BoardConfiguration
 /// Note that this doesn't include information on *temporary* scenarios in which castling are
 /// prevented. If castling would put the king in check, the option is still available to the king
 /// later.
-#[derive(Debug, PartialEq, Clone, Copy)]
+#[derive(Debug, PartialEq, Clone, Copy, Getters)]
 pub struct CastlingAvailability
 {
+    #[getset(get="pub")]
     white_castle_kingside: bool,
+    #[getset(get="pub")]
     white_castle_queenside: bool,
+    #[getset(get="pub")]
     black_castle_kingside: bool,
+    #[getset(get="pub")]
     black_castle_queenside: bool,
 }
 
@@ -89,6 +100,92 @@ impl CastlingAvailability
             white_castle_queenside,
             black_castle_kingside,
             black_castle_queenside
+        }
+    }
+
+    /// Updates the castling availability of the board state after a move is made.
+    ///
+    /// What this entails is essentially the following:
+    ///
+    /// - After the piece at 0,0 moves (for white) or 7,0 (for black), castling kingside is disabled
+    /// for that side.
+    /// - After the piece at 0,7 moves (for white) or 7,0 (for black), castling queenside is
+    /// disabled for that side.
+    /// - After the piece at 0,4 moves (for white) or 7,4 (for black), castling at all is disabled
+    /// on that side.
+    /// - Also, if a player castles, any further castling is disabled for that side.
+    ///
+    /// # Limitations
+    ///
+    /// This function doesn't actually check what piece is being moved! Once castling has been
+    /// disabled (which *must* involve moving any of the involved pieces off their starting
+    /// square), we don't actually care what piece ends up there. You can't ever re-enable castling
+    /// after it's been disabled.
+    ///
+    /// # Arguments
+    ///
+    /// * `moving_color` - The color of the player moving.
+    /// * `r#move` - The [Move] being made.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// [TODO:write some example code]
+    /// ```
+    pub fn update_with_move(&mut self, moving_color: PlayerColor, r#move: Move)
+    {
+        match (moving_color, r#move)
+        {
+            (PlayerColor::White, Move::Castle(_)) => 
+            {
+                self.white_castle_kingside = false;
+                self.white_castle_queenside = false;
+            },
+            (PlayerColor::Black, Move::Castle(_)) =>
+            {
+                self.black_castle_kingside = false;
+                self.black_castle_queenside = false;
+            },
+            (_, Move::NormalMove(move_data)) =>
+            {
+                match (moving_color, move_data.starting_square())
+                {
+                    // If we move off of the starting rook square on the a-file at any point, we disable castling
+                    // queenside.
+                    (PlayerColor::White, Square { rank: 0, file: 0 }) => 
+                    {
+                        self.white_castle_queenside = false;
+                    },
+                    // If we move off of the starting rook square on the h-file at any point, we
+                    // disable castling kingside.
+                    (PlayerColor::White, Square { rank: 0, file: 7 }) =>
+                    {
+                        self.white_castle_kingside = false;
+                    },
+                    // If we ever move the king (even if we don't castle) we disable castling in
+                    // both directions.
+                    (PlayerColor::White, Square { rank: 0, file: 4 }) =>
+                    {
+                        self.white_castle_kingside = false;
+                        self.white_castle_queenside = false;
+                    }
+
+                    (PlayerColor::Black, Square { rank: 7, file: 0 }) => 
+                    {
+                        self.black_castle_queenside = false;
+                    },
+                    (PlayerColor::Black, Square { rank: 7, file: 7 }) =>
+                    {
+                        self.black_castle_kingside = false;
+                    },
+                    (PlayerColor::Black, Square { rank: 7, file: 4 }) =>
+                    {
+                        self.black_castle_kingside = false;
+                        self.black_castle_queenside = false;
+                    },
+                    (_, _) => (),
+                }
+            }
         }
     }
 }
@@ -157,31 +254,6 @@ impl BoardConfiguration
             halfmove_clock,
             fullmove_number,
         }
-    }
-
-    pub fn active_color(&self) -> PlayerColor
-    {
-        self.active_color
-    }
-
-    pub fn castling_availability(&self) -> CastlingAvailability
-    {
-        self.castling_availability
-    }
-
-    pub fn en_passant_target_square(&self) -> Option<Square>
-    {
-        self.en_passant_target_square
-    }
-
-    pub fn halfmove_clock(&self) -> u8
-    {
-        self.halfmove_clock
-    }
-
-    pub fn fullmove_number(&self) -> u8
-    {
-        self.fullmove_number
     }
 }
 

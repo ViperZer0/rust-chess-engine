@@ -29,7 +29,7 @@ impl Board
     /// ```
     /// [TODO:write some example code]
     /// ```
-    pub fn parse_normal_move(&self, move_data: MoveCommandData) -> Result<Move, MoveError>
+    pub fn parse_normal_move(&self, move_data: &MoveCommandData) -> Result<Move, MoveError>
     {
         let starting_squares = match move_data.is_capture()
         {

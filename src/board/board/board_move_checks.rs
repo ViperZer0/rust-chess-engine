@@ -1,7 +1,7 @@
 //! This is a helper module for [board](super) that handles checking whether a given [Move]
 //! is legal or not.
 
-use crate::board::{Move, PlayerColor, Square};
+use crate::board::{r#move::CastlingDirection, Move, PlayerColor, Square};
 
 use super::Board;
 
@@ -22,7 +22,7 @@ impl Board
     /// ```
     /// [TODO:write some example code]
     /// ```
-    pub fn move_leaves_king_in_check(&self, r#move: Move) -> bool
+    pub fn move_leaves_king_in_check(&self, r#move: &Move) -> bool
     {
         // Attempt to make the move on the board and see if the king would be in check.
         // If so, returns true. Otherwise returns false.
@@ -65,9 +65,15 @@ impl Board
     /// ```
     /// [TODO:write some example code]
     /// ```
-    pub fn has_castled_already(&self, color: PlayerColor) -> bool
+    pub fn has_castled_already(&self, color: PlayerColor, check_direction: CastlingDirection) -> bool
     {
-        todo!()
+        match (color, check_direction)
+        {
+            (PlayerColor::White, CastlingDirection::Kingside) => *self.castling_availability.white_castle_kingside(),
+            (PlayerColor::White, CastlingDirection::Queenside) => *self.castling_availability.white_castle_queenside(),
+            (PlayerColor::Black, CastlingDirection::Kingside) => *self.castling_availability.black_castle_kingside(),
+            (PlayerColor::Black, CastlingDirection::Queenside) => *self.castling_availability.black_castle_queenside(),
+        }
     }
 
     fn check_squares_for_attack(&self, check_squares: &[Square]) -> bool
@@ -82,5 +88,4 @@ impl Board
         }
         return false;
     }
-
 }

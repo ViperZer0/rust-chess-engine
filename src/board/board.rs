@@ -129,9 +129,17 @@ impl Board
     /// successful, or a [MoveError] if the move was invalid for whatever reason.
     ///
     /// Does not modify the board, but instead returns a new board with the move made.
-    pub fn attempt_move(&self, attempted_move: MoveCommand) -> Result<Self, MoveError>
+    pub fn attempt_move(&self, attempted_move: &MoveCommand) -> Result<Self, MoveError>
     {
-        todo!();
+        let r#move = self.get_move(attempted_move)?;
+        // If the move is illegal, we abort.
+        if !self.check_move(&r#move)
+        {
+            return Err(MoveError::IllegalMove);
+        }
+
+        // Otherwise, we make the move!
+        Ok(self.make_move(&r#move))
     }
 
     /// Gets the piece located on a given square.
@@ -180,7 +188,7 @@ impl Board
     /// // only that it is possible.
     /// assert_eq!(false, r#move.unwrap().is_legal());
     /// ```
-    fn get_move(&self, move_command: MoveCommand) -> Result<Move, MoveError>
+    fn get_move(&self, move_command: &MoveCommand) -> Result<Move, MoveError>
     {
         match move_command
         {
@@ -219,8 +227,39 @@ impl Board
     /// // e4 should be a legal move
     /// assert!(r#move.unwrap().is_legal());
     /// ```
-    fn check_move(&self, attempted_move: Move) -> bool 
+    fn check_move(&self, attempted_move: &Move) -> bool 
     {
+        // 1. Check if the move would either put the player's king in check or leave the player's
+        //    king in check on the next board.
+        if self.move_leaves_king_in_check(attempted_move)
+        {
+            return false;
+        }
+
+        // 2. Check if the move is a castle. if the move IS a castle, does it move the king through
+        //    check?
+        match attempted_move
+        {
+            Move::Castle(CastlingDirection::Kingside) => 
+            {
+                if self.kingside_castle_moves_through_check()
+                {
+                    return false;
+                }
+            },
+            Move::Castle(CastlingDirection::Queenside) =>
+            {
+                if self.queenside_castle_moves_through_check()
+                {
+                    return false;
+                }
+            },
+            _ => (),
+        }
+
+        // I don't think there's any other situations where a move is possible but illegal? 
+        // I think it's all about check?
+        return true;
     }
 
     /// Consumes a move and returns a new board where the move has been made.
@@ -248,7 +287,7 @@ impl Board
     /// let r#move = board.check_move(r#move).unwrap();
     /// let new_board = board.make_move(r#move);
     /// ```
-    fn make_move(&self, r#move: Move) -> Self
+    fn make_move(&self, r#move: &Move) -> Self
     {
         let mut new_board = self.clone();
         new_board.make_move_in_place(r#move);
@@ -259,7 +298,7 @@ impl Board
     ///
     /// Instead of returning a new board, this function modifies it in place, altering the board
     /// state as necessary to represent a valid configuration.
-    fn make_move_in_place(&mut self, r#move: Move)
+    fn make_move_in_place(&mut self, r#move: &Move)
     {
         match r#move
         {
@@ -274,7 +313,10 @@ impl Board
                 }
                 self.add_piece(piece, &move_data.target_square());
             },
-        }
+        };
+        // Switch to next player
+        self.active_color = !self.active_color;
+        // We'll also want to increment the halfmove clock and stuff...
     }
 
     /// Adds a piece onto the board in the set position.
@@ -337,7 +379,7 @@ impl Board
         let king = self.query().color(king_color).piece_type(PieceType::King).result();
         let king_square: Vec<Square> = king.squares().collect();
         // This should always be true?
-        assert!(king_square.len() == 0);
+        assert!(king_square.len() == 1);
         let king_square = king_square[0];
         // Check each piece type to see if any pieces are attacking the king's square.
         let pawn_attacks = self.squares_of_type_that_can_capture_square(!king_color, PieceType::Pawn, king_square);
@@ -361,7 +403,7 @@ impl Board
         {
             return true;
         }
-        let queen_attacks = self.squares_of_type_that_can_capture_square(!king_color, PieceType::Rook, king_square);
+        let queen_attacks = self.squares_of_type_that_can_capture_square(!king_color, PieceType::Queen, king_square);
         if queen_attacks.len() > 0
         {
             return true;
@@ -432,7 +474,7 @@ mod tests
     {
         let board = Board::new_default_starting_board();
         let move_command = MoveCommand::from_str("e4").unwrap();
-        let new_board = board.attempt_move(move_command).unwrap();
+        let new_board = board.attempt_move(&move_command).unwrap();
         let expected_new_board_config = BoardConfiguration::from_str("rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1").unwrap();
         assert_eq!(expected_new_board_config, new_board.board_configuration());
     }
@@ -442,7 +484,7 @@ mod tests
     {
         let board = Board::new_default_starting_board();
         let move_command = MoveCommand::from_str("Qe3").unwrap();
-        let new_board = board.attempt_move(move_command);
+        let new_board = board.attempt_move(&move_command);
         assert!(new_board.is_err());
     }
 
@@ -451,7 +493,7 @@ mod tests
     {
         let board = Board::new_default_starting_board();
         let move_command = MoveCommand::from_str("Qd3").unwrap();
-        let new_board = board.attempt_move(move_command);
+        let new_board = board.attempt_move(&move_command);
         assert!(new_board.is_err());
     }
 
@@ -460,7 +502,7 @@ mod tests
     {
         let board = Board::new_board_with_configuration(&BoardConfiguration::from_str("q6k/8/8/3B4/8/8/8/K7 w - - 0 1").unwrap());
         let move_command = MoveCommand::from_str("Bc4").unwrap();
-        let new_board = board.attempt_move(move_command);
+        let new_board = board.attempt_move(&move_command);
         assert!(new_board.is_err());
     }
 
@@ -469,7 +511,7 @@ mod tests
     {
         let board = Board::new_board_with_configuration(&BoardConfiguration::from_str("q6k/8/8/3B4/8/8/8/K7 w - - 0 1").unwrap());
         let move_command = MoveCommand::from_str("Kb2").unwrap();
-        let new_board = board.attempt_move(move_command);
+        let new_board = board.attempt_move(&move_command);
         assert!(new_board.is_ok());
     }
 
@@ -478,7 +520,7 @@ mod tests
     {
         let board = Board::new_board_with_configuration(&BoardConfiguration::from_str("q6k/8/8/3B4/8/8/8/K7 w - - 0 1").unwrap());
         let move_command = MoveCommand::from_str("Ba2").unwrap();
-        let new_board = board.attempt_move(move_command);
+        let new_board = board.attempt_move(&move_command);
         assert!(new_board.is_ok());
     }
 
@@ -487,7 +529,7 @@ mod tests
     {
         let board = Board::new_board_with_configuration(&BoardConfiguration::from_str("q6k/8/8/3B4/8/8/8/K7 w - - 0 1").unwrap());
         let move_command = MoveCommand::from_str("Bxa8").unwrap();
-        let new_board = board.attempt_move(move_command);
+        let new_board = board.attempt_move(&move_command);
         assert!(new_board.is_ok());
     }
 
@@ -531,7 +573,7 @@ mod tests
         let board_config = BoardConfiguration::from_str("3k4/8/3K4/8/Q7/8/8/8 w - - 0 1").unwrap();
         let board = Board::new_board_with_configuration(&board_config);
         let r#move = MoveCommand::from_str("Qd7").unwrap();
-        let new_board = board.attempt_move(r#move).unwrap();
+        let new_board = board.attempt_move(&r#move).unwrap();
         assert!(new_board.game_result().is_over());
         assert!(!new_board.game_result().is_draw());
         assert_eq!(PlayerColor::White, new_board.game_result().get_winner().unwrap());

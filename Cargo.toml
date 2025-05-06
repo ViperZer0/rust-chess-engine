@@ -11,6 +11,7 @@ log = "0.4.27"
 regex = "1.11.1"
 thiserror = "2.0.12"
 derive_more = { version = "2", features = ["from", "add", "mul", "into", "add_assign", "mul_assign", "not" ] }
+getset = "0.1.5"
 
 [dev-dependencies]
 criterion = { version = "0.4", features = ["html_reports"] }
