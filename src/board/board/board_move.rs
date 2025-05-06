@@ -291,7 +291,6 @@ impl Board {
         let down_right = Bitboard::from(from) >> 7;
         let down_left = Bitboard::from(from) >> 9;
 
-        println!("{:?}", self.query().color(!active_color).result());
         self.query().color(!active_color).result() & match active_color
         {
             PlayerColor::White => up_right & !Bitboard::file_mask(0) |
