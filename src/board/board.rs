@@ -17,7 +17,7 @@ mod mut_get_bitboards;
 /// maintain the internal state and not violate the rules of chess or anything. Boards are
 /// immutable: making moves on a board does not modify the existing board but instead returns a new
 /// one.
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Board 
 {
     /// Tracks what piece is on a given square.
@@ -262,7 +262,6 @@ impl Board
         //    king in check on the next board.
         if self.move_leaves_king_in_check(attempted_move)
         {
-            println!("Leaves king in check");
             return false;
         }
 
@@ -274,7 +273,6 @@ impl Board
             {
                 if self.kingside_castle_moves_through_check(self.active_color)
                 {
-                    println!("Moves king through check");
                     return false;
                 }
             },
@@ -282,7 +280,6 @@ impl Board
             {
                 if self.queenside_castle_moves_through_check(self.active_color)
                 {
-                    println!("Moves king through check");
                     return false;
                 }
             },
@@ -478,6 +475,12 @@ impl Board
         {
             return true;
         }
+        let king_attacks = self.squares_of_type_that_can_capture_square(!king_color, PieceType::King, king_square);
+        if king_attacks.len() > 0
+        {
+            return true;
+        }
+
         // We shouldn't have to check for king attacks???
         return false;
     }
