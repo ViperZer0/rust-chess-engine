@@ -1,6 +1,6 @@
 use std::{collections::HashMap, fmt::Display};
 
-use crate::{bitboard::Bitboard, board::{PieceType, PlayerColor}, parse::MoveCommand};
+use crate::{bitboard::Bitboard, board::{DrawReason, PieceType, PlayerColor}, parse::MoveCommand};
 
 use super::{board_config::BoardConfigurationBuilder, error::MoveError, r#move::{CastlingDirection, Move}, BoardConfiguration, BoardResult, CastlingAvailability, Piece, Square};
 mod board_move;
@@ -123,7 +123,35 @@ impl Board
     /// in progress.
     pub fn game_result(&self) -> BoardResult
     {
-        todo!();
+        // Draw after 50 moves without a pawn push or capture.
+        if self.halfmove_clock >= 50
+        {
+            return BoardResult::Draw(DrawReason::FiftyMoveRule);
+        }
+
+        // Other things we should check:
+        // - Threefold repitition. This is probably beyond the scope of a board,
+        //   since a board doesn't have any information about past moves.
+        // - Checkmate impossible. A game is drawn when neither player has sufficient material
+        //   to checkmate the other king. We shouild check that.
+        // - Draw by agreement? Can agents agree to a draw?
+        //
+        // For now we're only covering:
+        // - FiftyMoveRule. A draw is automatic when it has been 50 moves without a pawn push
+        //   or capture.
+        // - Stalemate. 
+        // - Checkmate.
+
+        match (self.is_king_in_check(self.active_color), self.generate_moves_for_side(self.active_color).is_empty())
+        {
+            // King is in check *and* the player has no valid moves
+            // Then the *other* player wins.
+            (true, true) => BoardResult::Win(!self.active_color),
+            // King is NOT in check, but the player has no valid moves.
+            (false, true) => BoardResult::Draw(DrawReason::Stalemate),
+            // The player can still move, the game is not over yet.
+            (_, false) => BoardResult::InProgress,
+        }
     }
 
     /// Attempts to make a move on the board, returning a new board state wrapped in [Ok] if

@@ -21,10 +21,8 @@ pub enum BoardResult
 {
     /// A game is still in progress.
     InProgress,
-    /// White won.
-    WhiteWin,
-    /// Black won.
-    BlackWin,
+    // Win for specified color
+    Win(PlayerColor),
     /// The game was a draw, the reason is recorded in [DrawReason]
     Draw(DrawReason),
 }
@@ -73,8 +71,7 @@ impl BoardResult
     {
         match self
         {
-            Self::WhiteWin => true,
-            Self::BlackWin => true,
+            Self::Win(_) => true,
             Self::InProgress => false,
             Self::Draw(_) => false,
         }
@@ -86,8 +83,7 @@ impl BoardResult
     {
         match self
         {
-            Self::WhiteWin => Ok(PlayerColor::White),
-            Self::BlackWin => Ok(PlayerColor::Black),
+            Self::Win(color) => Ok(*color),
             Self::InProgress => Err(GetWinnerError::StillInProgress),
             Self::Draw(x) => Err(GetWinnerError::Draw(*x)),
         }
@@ -111,8 +107,7 @@ impl BoardResult
         match self
         {
             Self::InProgress => None,
-            Self::WhiteWin => None,
-            Self::BlackWin => None,
+            Self::Win(_) => None,
             // Trivial copy here.
             Self::Draw(x) => Some(*x),
         }
@@ -127,8 +122,8 @@ mod tests
     #[test]
     fn test_is_in_progress()
     {
-        assert_eq!(false, BoardResult::BlackWin.is_in_progress());
-        assert_eq!(false, BoardResult::WhiteWin.is_in_progress());
+        assert_eq!(false, BoardResult::Win(PlayerColor::Black).is_in_progress());
+        assert_eq!(false, BoardResult::Win(PlayerColor::White).is_in_progress());
         assert_eq!(false, BoardResult::Draw(DrawReason::Agreement).is_in_progress());
         assert_eq!(true, BoardResult::InProgress.is_in_progress());
     }
@@ -136,8 +131,8 @@ mod tests
     #[test]
     fn test_is_over()
     {
-        assert_eq!(true, BoardResult::BlackWin.is_over());
-        assert_eq!(true, BoardResult::WhiteWin.is_over());
+        assert_eq!(true, BoardResult::Win(PlayerColor::Black).is_over());
+        assert_eq!(true, BoardResult::Win(PlayerColor::White).is_over());
         assert_eq!(true, BoardResult::Draw(DrawReason::Agreement).is_over());
         assert_eq!(false, BoardResult::InProgress.is_over());
     }
@@ -147,15 +142,15 @@ mod tests
     {
         assert!(BoardResult::InProgress.get_winner().is_err());
         assert!(BoardResult::Draw(DrawReason::Agreement).get_winner().is_err());
-        assert_eq!(Ok(PlayerColor::White), BoardResult::WhiteWin.get_winner());
-        assert_eq!(Ok(PlayerColor::Black), BoardResult::BlackWin.get_winner());
+        assert_eq!(Ok(PlayerColor::White), BoardResult::Win(PlayerColor::White).get_winner());
+        assert_eq!(Ok(PlayerColor::Black), BoardResult::Win(PlayerColor::Black).get_winner());
     }
 
     #[test]
     fn test_is_draw()
     {
-        assert_eq!(false, BoardResult::BlackWin.is_draw());
-        assert_eq!(false, BoardResult::WhiteWin.is_draw());
+        assert_eq!(false, BoardResult::Win(PlayerColor::White).is_draw());
+        assert_eq!(false, BoardResult::Win(PlayerColor::Black).is_draw());
         assert_eq!(true, BoardResult::Draw(DrawReason::Agreement).is_draw());
         assert_eq!(false, BoardResult::InProgress.is_draw());
     }
@@ -163,8 +158,8 @@ mod tests
     #[test]
     fn test_get_draw_reason()
     {
-        assert_eq!(None, BoardResult::BlackWin.get_draw_reason());
-        assert_eq!(None, BoardResult::WhiteWin.get_draw_reason());
+        assert_eq!(None, BoardResult::Win(PlayerColor::White).get_draw_reason());
+        assert_eq!(None, BoardResult::Win(PlayerColor::Black).get_draw_reason());
         assert_eq!(None, BoardResult::InProgress.get_draw_reason());
         assert_eq!(Some(DrawReason::Agreement), BoardResult::Draw(DrawReason::Agreement).get_draw_reason());
     }
