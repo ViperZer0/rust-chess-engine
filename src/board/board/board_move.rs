@@ -511,7 +511,9 @@ impl Direction
 #[cfg(test)]
 mod tests
 {
-    use std::collections::HashSet;
+    use std::{collections::HashSet, str::FromStr};
+
+    use crate::board::BoardConfiguration;
 
     use super::*;
 
@@ -690,22 +692,45 @@ mod tests
         const AVAILABLE_ROOK_MOVES: usize = 11;
         let board = Board::new_default_starting_board();
         let rook_move_mask = board.rook_moves(PlayerColor::White, Square::new(2, 0));
-        let rook_squares: Vec<Square> = rook_move_mask.squares().collect();
+        let rook_squares: HashSet<Square> = rook_move_mask.squares().collect();
         assert_eq!(rook_squares.len(), AVAILABLE_ROOK_MOVES);
 
-        let mut expected_rook_squares: Vec<Square> = Vec::with_capacity(AVAILABLE_ROOK_MOVES);
+        let mut expected_rook_squares: HashSet<Square> = HashSet::with_capacity(AVAILABLE_ROOK_MOVES);
         for file in 1..8
         {
-            expected_rook_squares.push(Square::new(2, file));
+            expected_rook_squares.insert(Square::new(2, file));
         }
 
         for rank in 3..7
         {
-            expected_rook_squares.push(Square::new(rank, 0));
+            expected_rook_squares.insert(Square::new(rank, 0));
         }
         // Seal against mutating vector anymore
         let expected_rook_squares = expected_rook_squares;
 
+        assert_eq!(rook_squares, expected_rook_squares);
+    }
+
+    #[test]
+    fn rook_can_capture_on_adjacent_occupied_square()
+    {
+        const AVAILABLE_ROOK_MOVES: usize = 11;
+        let board = Board::new_default_starting_board();
+        let rook_move_mask = board.rook_moves(PlayerColor::White, Square::new(5, 0));
+        let rook_squares: HashSet<Square> = rook_move_mask.squares().collect();
+        assert_eq!(rook_squares.len(), AVAILABLE_ROOK_MOVES);
+
+        let mut expected_rook_squares: HashSet<Square> = HashSet::with_capacity(AVAILABLE_ROOK_MOVES);
+        expected_rook_squares.insert(Square::new(6, 0));
+        for rank in 2..5 
+        {
+            expected_rook_squares.insert(Square::new(rank, 0));
+        }
+        for file in 1..8
+        {
+            expected_rook_squares.insert(Square::new(5, file));
+        }
+        let expected_rook_squares = expected_rook_squares;
         assert_eq!(rook_squares, expected_rook_squares);
     }
 
@@ -826,5 +851,16 @@ mod tests
         let board = Board::new_default_starting_board();
         let pawn_move_mask = board.pawn_attacks(PlayerColor::White, Square::new(3, 3));
         assert_eq!(pawn_move_mask, Bitboard::new(0));
+    }
+
+    #[test]
+    fn queen_move_on_rank_6_checkmate()
+    {
+        const AVAILABLE_QUEEN_MOVES: usize = 17;
+        let board = Board::new_board_with_configuration(&BoardConfiguration::from_str("3k4/3Q4/3K4/8/8/8/8/8 b - - 0 1").unwrap());
+        let queen_move_mask = board.queen_moves(PlayerColor::White, Square::new(6, 3));
+        let queen_moves: HashSet<Square> = queen_move_mask.squares().collect();
+        assert_eq!(queen_moves.len(), AVAILABLE_QUEEN_MOVES);
+        assert_eq!(queen_move_mask, Bitboard::new(0x1CF7_1422_4180_0000));
     }
 }
