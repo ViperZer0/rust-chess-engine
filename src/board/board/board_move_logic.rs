@@ -139,6 +139,7 @@ impl Board
         // Then we filter the moves down to only those pieces which can REACH the target square.
         // This could be no pieces, one piece (correct), or two pieces (needs to be filtered down
         // by discriminant.
+
         piece_map.squares().filter(
             |square| !(move_type(&self, self.active_color, *square) & target_square_bitboard).is_empty()
         ).collect()
@@ -155,3 +156,45 @@ impl Board
     }
 }
 
+#[cfg(test)]
+mod tests
+{
+    use std::str::FromStr;
+
+    use crate::board::BoardConfiguration;
+
+    use super::*;
+
+    #[test]
+    fn check_queen_can_reach_king_square()
+    {
+        let board = Board::new_board_with_configuration(&BoardConfiguration::from_str("k7/Q7/K7/8/8/8/8/8 b - - 0 1").unwrap());
+        let target_square = Square::new(7, 0);
+        let queen_attacks_square = board.squares_of_type_that_can_capture_square(PlayerColor::White, PieceType::Queen, target_square);
+        assert_eq!(queen_attacks_square.len(), 1);
+        assert_eq!(queen_attacks_square[0], Square::new(6, 0));
+    }
+
+    #[test]
+    fn check_knight_can_reach_king_square()
+    {
+        let board = Board::new_board_with_configuration(&BoardConfiguration::from_str("k7/2N5/4p3/1K6/8/8/8/8 b - - 0 1").unwrap());
+        let target_square = Square::new(7, 0);
+        let knight_attacks_square = board.squares_of_type_that_can_capture_square(PlayerColor::White, PieceType::Knight, target_square);
+        assert_eq!(knight_attacks_square.len(), 1);
+        assert_eq!(knight_attacks_square[0], Square::new(6, 2));
+    }
+
+    #[test]
+    fn check_all_pieces_that_can_reach_target_square()
+    {
+        let board = Board::new_board_with_configuration(&BoardConfiguration::from_str("k6Q/2N5/8/8/4B3/2K5/R7/8 b - - 0 1").unwrap());
+        let target_square = Square::new(7, 0);
+        let all_squares = board.all_squares_that_can_capture_square(PlayerColor::White, target_square);
+        assert_eq!(all_squares.len(), 4);
+        assert!(all_squares.contains(&Square::new(7, 7)));
+        assert!(all_squares.contains(&Square::new(6, 2)));
+        assert!(all_squares.contains(&Square::new(1, 0)));
+        assert!(all_squares.contains(&Square::new(3, 4)));
+    }
+}
