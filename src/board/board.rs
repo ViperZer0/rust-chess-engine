@@ -7,6 +7,7 @@ mod board_move;
 mod board_query;
 mod board_move_logic;
 mod board_move_checks;
+mod board_move_generation;
 mod mut_get_bitboards;
 
 /// A given board state.
