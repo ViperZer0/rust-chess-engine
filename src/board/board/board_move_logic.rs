@@ -102,7 +102,7 @@ impl Board
         // This could be no pieces, one piece (correct), or two pieces (needs to be filtered down
         // by discriminant.
         piece_map.squares().filter(
-            |square| !(move_type(&self, self.active_color, *square) & target_square_bitboard).is_empty()
+            |starting_square| !((move_type(&self, self.active_color, *starting_square) & target_square_bitboard).is_empty())
         ).collect()
     }
 
@@ -121,10 +121,10 @@ impl Board
     /// ```
     /// [TODO:write some example code]
     /// ```
-    pub fn squares_of_type_that_can_capture_square(&self, piece_color: PlayerColor, piece_type: PieceType, square: Square) -> Vec<Square>
+    pub fn squares_of_type_that_can_capture_square(&self, piece_color: PlayerColor, piece_type: PieceType, target_square: Square) -> Vec<Square>
     {
         let piece_map = self.pieces_of_type(piece_type) & self.pieces_of_color(piece_color);
-        let target_square_bitboard: Bitboard = square.into();
+        let target_square_bitboard: Bitboard = target_square.into();
 
         // We pick one of the move types depending on what type of piece this is.
         let move_type: fn(&Board, PlayerColor, Square) -> Bitboard = match piece_type
@@ -141,7 +141,7 @@ impl Board
         // by discriminant.
 
         piece_map.squares().filter(
-            |square| !(move_type(&self, self.active_color, *square) & target_square_bitboard).is_empty()
+            |start_square| !((move_type(&self, piece_color, *start_square) & target_square_bitboard).is_empty())
         ).collect()
     }
 
@@ -197,4 +197,40 @@ mod tests
         assert!(all_squares.contains(&Square::new(1, 0)));
         assert!(all_squares.contains(&Square::new(3, 4)));
     }
+
+    #[test]
+    fn check_only_some_pieces_can_reach_target_square()
+    {
+        let board = Board::new_board_with_configuration(&BoardConfiguration::from_str("7k/8/1K6/8/2BB4/8/8/8 w - - 0 1").unwrap());
+        let target_square = Square::new(7, 7);
+        let bishop_attacks_square = board.squares_of_type_that_can_capture_square(PlayerColor::White, PieceType::Bishop, target_square);
+        assert_eq!(bishop_attacks_square.len(), 1);
+        assert!(bishop_attacks_square.contains(&Square::new(3, 3)));
+        assert!(!bishop_attacks_square.contains(&Square::new(3, 2)));
+    }
+
+    #[test]
+    fn check_pawn_can_move_to_square()
+    {
+        let board = Board::new_board_with_configuration(&BoardConfiguration::from_str("7k/8/8/8/8/8/P7/7K w - - 0 1").unwrap());
+        let target_square = Square::new(3, 0);
+        let pawn_move_squares = board.squares_of_type_that_can_move_to_square(PlayerColor::White, PieceType::Pawn, target_square);
+        let pawn_attack_squares = board.squares_of_type_that_can_capture_square(PlayerColor::White, PieceType::Pawn, target_square);
+        assert_eq!(pawn_move_squares.len(), 1);
+        assert!(pawn_move_squares.contains(&Square::new(1, 0)));
+        assert_eq!(pawn_attack_squares.len(), 0);
+    }
+
+    #[test]
+    fn check_pawn_can_capture_square()
+    {
+        let board = Board::new_board_with_configuration(&BoardConfiguration::from_str("7k/8/8/8/8/1p6/P7/7K w - - 0 1").unwrap());
+        let target_square = Square::new(2, 1);
+        let pawn_move_squares = board.squares_of_type_that_can_move_to_square(PlayerColor::White, PieceType::Pawn, target_square);
+        let pawn_attack_squares = board.squares_of_type_that_can_capture_square(PlayerColor::White, PieceType::Pawn, target_square);
+        assert_eq!(pawn_move_squares.len(), 0);
+        assert_eq!(pawn_attack_squares.len(), 1);
+        assert!(pawn_attack_squares.contains(&Square::new(1, 0)));
+    }
+
 }
