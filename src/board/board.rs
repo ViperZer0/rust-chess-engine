@@ -158,17 +158,35 @@ impl Board
     /// successful, or a [MoveError] if the move was invalid for whatever reason.
     ///
     /// Does not modify the board, but instead returns a new board with the move made.
-    pub fn attempt_move(&self, attempted_move: &MoveCommand) -> Result<Self, MoveError>
+    pub fn attempt_move_from_command(&self, attempted_move: &MoveCommand) -> Result<Self, MoveError>
     {
         let r#move = self.get_move(attempted_move)?;
+        self.attempt_move(&r#move)
+    }
+
+    /// Attempts to make a move on the board. Same as [Self::attempt_move_from_command], but
+    /// instead of taking a [MoveCommand], it takes a pre-built [Move] which is evaluated for
+    /// correctness.
+    ///
+    /// # Arguments
+    ///
+    /// * `attempted_move` - The attempted move
+    ///
+    /// # Errors
+    ///
+    /// A [MoveError] is returned for any scenario in which the [Move] being made didn't make
+    /// sense.
+    pub fn attempt_move(&self, attempted_move: &Move) -> Result<Self, MoveError>
+    {
         // If the move is illegal, we abort.
-        if !self.check_move(&r#move)
+        if !self.check_move(&attempted_move)
         {
             return Err(MoveError::IllegalMove);
         }
 
         // Otherwise, we make the move!
-        Ok(self.make_move(&r#move))
+        Ok(self.make_move(&attempted_move))
+
     }
 
     /// Gets the piece located on a given square.
@@ -217,7 +235,7 @@ impl Board
     /// // only that it is possible.
     /// assert_eq!(false, r#move.unwrap().is_legal());
     /// ```
-    fn get_move(&self, move_command: &MoveCommand) -> Result<Move, MoveError>
+    pub fn get_move(&self, move_command: &MoveCommand) -> Result<Move, MoveError>
     {
         match move_command
         {
@@ -297,7 +315,7 @@ impl Board
     /// to see if the attempted move is valid, hence this being a private function.
     ///
     /// If you want to attempt to make a move with all the expected checks in place, use
-    /// [Board::attempt_move]
+    /// [Board::attempt_move_from_command] or [Board::attempt_move]
     ///
     /// # Arguments
     ///
@@ -549,7 +567,7 @@ mod tests
     {
         let board = Board::new_default_starting_board();
         let move_command = MoveCommand::from_str("e4").unwrap();
-        let new_board = board.attempt_move(&move_command).unwrap();
+        let new_board = board.attempt_move_from_command(&move_command).unwrap();
         let expected_new_board_config = BoardConfiguration::from_str("rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1").unwrap();
         assert_eq!(expected_new_board_config, new_board.board_configuration());
     }
@@ -559,7 +577,7 @@ mod tests
     {
         let board = Board::new_default_starting_board();
         let move_command = MoveCommand::from_str("Qe3").unwrap();
-        let new_board = board.attempt_move(&move_command);
+        let new_board = board.attempt_move_from_command(&move_command);
         assert!(new_board.is_err());
     }
 
@@ -568,7 +586,7 @@ mod tests
     {
         let board = Board::new_default_starting_board();
         let move_command = MoveCommand::from_str("Qd3").unwrap();
-        let new_board = board.attempt_move(&move_command);
+        let new_board = board.attempt_move_from_command(&move_command);
         assert!(new_board.is_err());
     }
 
@@ -577,7 +595,7 @@ mod tests
     {
         let board = Board::new_board_with_configuration(&BoardConfiguration::from_str("q6k/8/8/3B4/8/8/8/K7 w - - 0 1").unwrap());
         let move_command = MoveCommand::from_str("Bc4").unwrap();
-        let new_board = board.attempt_move(&move_command);
+        let new_board = board.attempt_move_from_command(&move_command);
         assert!(new_board.is_err());
     }
 
@@ -586,7 +604,7 @@ mod tests
     {
         let board = Board::new_board_with_configuration(&BoardConfiguration::from_str("q6k/8/8/3B4/8/8/8/K7 w - - 0 1").unwrap());
         let move_command = MoveCommand::from_str("Kb2").unwrap();
-        let new_board = board.attempt_move(&move_command);
+        let new_board = board.attempt_move_from_command(&move_command);
         assert!(new_board.is_ok());
     }
 
@@ -595,7 +613,7 @@ mod tests
     {
         let board = Board::new_board_with_configuration(&BoardConfiguration::from_str("q6k/8/8/3B4/8/8/8/K7 w - - 0 1").unwrap());
         let move_command = MoveCommand::from_str("Ba2").unwrap();
-        let new_board = board.attempt_move(&move_command);
+        let new_board = board.attempt_move_from_command(&move_command);
         assert!(new_board.is_ok());
     }
 
@@ -604,7 +622,7 @@ mod tests
     {
         let board = Board::new_board_with_configuration(&BoardConfiguration::from_str("q6k/8/8/3B4/8/8/8/K7 w - - 0 1").unwrap());
         let move_command = MoveCommand::from_str("Bxa8").unwrap();
-        let new_board = board.attempt_move(&move_command);
+        let new_board = board.attempt_move_from_command(&move_command);
         assert!(new_board.is_ok());
     }
 
@@ -648,7 +666,7 @@ mod tests
         let board_config = BoardConfiguration::from_str("3k4/8/3K4/8/Q7/8/8/8 w - - 0 1").unwrap();
         let board = Board::new_board_with_configuration(&board_config);
         let r#move = MoveCommand::from_str("Qd7").unwrap();
-        let new_board = board.attempt_move(&r#move).unwrap();
+        let new_board = board.attempt_move_from_command(&r#move).unwrap();
         assert!(new_board.game_result().is_over());
         assert!(!new_board.game_result().is_draw());
         assert_eq!(PlayerColor::White, new_board.game_result().get_winner().unwrap());
@@ -745,7 +763,7 @@ mod tests
     {
         let board = Board::new_board_with_configuration(&BoardConfiguration::from_str("r1bqk1nr/pppp1ppp/2n5/2b1p3/2B1P3/5N2/PPPP1PPP/RNBQK2R w KQkq - 4 4").unwrap());
         let castle_move = MoveCommand::from_str("O-O").unwrap();
-        let new_board = board.attempt_move(&castle_move).unwrap();
+        let new_board = board.attempt_move_from_command(&castle_move).unwrap();
         let expected_board_configuration = BoardConfiguration::from_str("r1bqk1nr/pppp1ppp/2n5/2b1p3/2B1P3/5N2/PPPP1PPP/RNBQ1RK1 b kq - 5 4").unwrap();
         print_hashmap_differences(new_board.board_configuration().pieces(), expected_board_configuration.pieces());
         assert_eq!(new_board.board_configuration(),expected_board_configuration);
@@ -758,7 +776,7 @@ mod tests
     {
         let board = Board::new_board_with_configuration(&BoardConfiguration::from_str("r1bqk2r/pppp1ppp/2n2n2/2b1p3/2B1P3/3P1N2/PPP2PPP/RNBQ1RK1 b kq - 0 5").unwrap());
         let castle_move = MoveCommand::from_str("O-O").unwrap();
-        let new_board = board.attempt_move(&castle_move).unwrap();
+        let new_board = board.attempt_move_from_command(&castle_move).unwrap();
         assert_eq!(new_board.board_configuration(), BoardConfiguration::from_str("r1bq1rk1/pppp1ppp/2n2n2/2b1p3/2B1P3/3P1N2/PPP2PPP/RNBQ1RK1 w - - 1 6").unwrap());
         assert_eq!(new_board.piece_at(&Square::new(7, 5)).unwrap().piece_type(), PieceType::Rook);
         assert_eq!(new_board.piece_at(&Square::new(7, 6)).unwrap().piece_type(), PieceType::King);
@@ -769,7 +787,7 @@ mod tests
     {
         let board = Board::new_board_with_configuration(&BoardConfiguration::from_str("rnb1k2r/pppqbppp/4pn2/3p4/3P1B2/2P1P3/PPQN1PPP/R3KBNR w KQkq - 5 7").unwrap());
         let castle_move = MoveCommand::from_str("O-O-O").unwrap();
-        let new_board = board.attempt_move(&castle_move).unwrap();
+        let new_board = board.attempt_move_from_command(&castle_move).unwrap();
         assert_eq!(new_board.board_configuration(), BoardConfiguration::from_str("rnb1k2r/pppqbppp/4pn2/3p4/3P1B2/2P1P3/PPQN1PPP/2KR1BNR b kq - 6 7").unwrap());
         assert_eq!(new_board.piece_at(&Square::new(0, 3)).unwrap().piece_type(), PieceType::Rook);
         assert_eq!(new_board.piece_at(&Square::new(0, 2)).unwrap().piece_type(), PieceType::King);
@@ -780,7 +798,7 @@ mod tests
     {
         let board = Board::new_board_with_configuration(&BoardConfiguration::from_str("r3k2r/pp1bbppp/2nqpn2/2ppN3/3P4/2PBP3/PPQN1PPP/2KR3R b kq - 3 11").unwrap());
         let castle_move = MoveCommand::from_str("O-O-O").unwrap();
-        let new_board = board.attempt_move(&castle_move).unwrap();
+        let new_board = board.attempt_move_from_command(&castle_move).unwrap();
         assert_eq!(new_board.board_configuration(), BoardConfiguration::from_str("2kr3r/pp1bbppp/2nqpn2/2ppN3/3P4/2PBP3/PPQN1PPP/2KR3R w - - 4 12").unwrap());
         assert_eq!(new_board.piece_at(&Square::new(7, 3)).unwrap().piece_type(), PieceType::Rook);
         assert_eq!(new_board.piece_at(&Square::new(7, 2)).unwrap().piece_type(), PieceType::King);
@@ -791,7 +809,7 @@ mod tests
     {
         let board = Board::new_default_starting_board();
         let r#move = MoveCommand::from_str("Nc3").unwrap();
-        let new_board = board.attempt_move(&r#move).unwrap();
+        let new_board = board.attempt_move_from_command(&r#move).unwrap();
         assert_eq!(1, new_board.board_configuration().halfmove_clock());
         assert_eq!(1, new_board.board_configuration().fullmove_number());
     }
@@ -801,7 +819,7 @@ mod tests
     {
         let board = Board::new_board_with_configuration(&BoardConfiguration::from_str("rnbqkbnr/pppppppp/8/8/8/2N5/PPPPPPPP/R1BQKBNR b KQkq - 1 1").unwrap());
         let r#move = MoveCommand::from_str("Nf6").unwrap();
-        let new_board = board.attempt_move(&r#move).unwrap();
+        let new_board = board.attempt_move_from_command(&r#move).unwrap();
         assert_eq!(2, new_board.board_configuration().halfmove_clock());
         assert_eq!(2, new_board.board_configuration().fullmove_number());
     }
@@ -811,7 +829,7 @@ mod tests
     {
         let board = Board::new_board_with_configuration(&BoardConfiguration::from_str("rnbqkb1r/pppppppp/5n2/8/8/2N5/PPPPPPPP/R1BQKBNR w KQkq - 2 2").unwrap());
         let r#move = MoveCommand::from_str("e4").unwrap();
-        let new_board = board.attempt_move(&r#move).unwrap();
+        let new_board = board.attempt_move_from_command(&r#move).unwrap();
         assert_eq!(0, new_board.board_configuration().halfmove_clock());
     }
 
@@ -820,7 +838,7 @@ mod tests
     {
         let board = Board::new_board_with_configuration(&BoardConfiguration::from_str("rnbqkb1r/pppppppp/5n2/8/4N3/8/PPPPPPPP/R1BQKBNR b KQkq - 3 2").unwrap());
         let r#move = MoveCommand::from_str("Nxe4").unwrap();
-        let new_board = board.attempt_move(&r#move).unwrap();
+        let new_board = board.attempt_move_from_command(&r#move).unwrap();
         assert_eq!(0, new_board.board_configuration().halfmove_clock());
     }
 }
