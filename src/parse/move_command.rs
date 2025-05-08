@@ -1,6 +1,7 @@
 //! Specifies the [MoveCommand] type.
 
 use std::str::FromStr;
+use getset::{CopyGetters, Getters};
 use regex::RegexBuilder;
 
 use crate::board::{Line, PieceType, Square};
@@ -113,7 +114,8 @@ impl MoveCommand
 /// to indicate whether a move placed a king in check by suffixing the move with a "+".
 /// This doesn't actually add any new information, however, so is ignored in our parser
 /// as it might make it harder for beginners to input moves.
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, CopyGetters)]
+#[getset(get_copy="pub")]
 pub struct MoveCommandData
 {
     /// What piece type is being moved. Defaults to pawn if no letter was specified. 
@@ -125,57 +127,6 @@ pub struct MoveCommandData
     capture: bool,
     /// The destination square.
     target_square: Square,
-}
-
-impl MoveCommandData
-{
-    /// Gets the inner piece type
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// [TODO:write some example code]
-    /// ```
-    pub const fn piece_type(&self) -> PieceType
-    {
-        self.piece_type
-    }
-
-    /// Gets the inner discriminant
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// [TODO:write some example code]
-    /// ```
-    pub const fn discriminant(&self) -> Option<Line>
-    {
-        self.discriminant
-    }
-
-    /// Gets whether or not this move is a capture
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// [TODO:write some example code]
-    /// ```
-    pub const fn is_capture(&self) -> bool
-    {
-        self.capture
-    }
-
-    /// Get the target move square
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// [TODO:write some example code]
-    /// ```
-    pub const fn target_square(&self) -> Square
-    {
-        self.target_square
-    }
 }
 
 impl FromStr for MoveCommand

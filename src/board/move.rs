@@ -1,3 +1,5 @@
+use getset::CopyGetters;
+
 use crate::parse::MoveCommandData;
 
 use super::{PieceType, Square};
@@ -42,7 +44,8 @@ pub enum Move
 }
 
 /// Contains information about the move relevant to the [crate::board::Board]
-#[derive(Debug)]
+#[derive(Debug, CopyGetters)]
+#[getset(get_copy="pub")]
 pub struct MoveData
 {
     starting_square: Square,
@@ -97,23 +100,8 @@ impl MoveData
         Self
         {
             starting_square,
-            capture: move_command_data.is_capture(),
+            capture: move_command_data.capture(),
             target_square: move_command_data.target_square(),
         }
-    }
-
-    pub const fn starting_square(&self) -> Square
-    {
-        self.starting_square
-    }
-
-    pub const fn is_capture(&self) -> bool
-    {
-        self.capture
-    }
-
-    pub const fn target_square(&self) -> Square
-    {
-        self.target_square
     }
 }

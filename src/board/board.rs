@@ -356,14 +356,14 @@ impl Board
             Move::NormalMove(move_data) => {
                 let piece = self.remove_piece(&move_data.starting_square());
                 let piece = piece.expect("There was no piece at the starting square!");
-                if move_data.is_capture()
+                if move_data.capture()
                 {
                     self.remove_piece(&move_data.target_square());
                 }
                 self.add_piece(piece, &move_data.target_square());
 
                 // Check to see if we increment the halfmove_clock.
-                match (piece.piece_type(), move_data.is_capture())
+                match (piece.piece_type(), move_data.capture())
                 {
                     // If we are moving a pawn we reset the halfmove clock
                     (PieceType::Pawn, _) => { self.halfmove_clock = 0 },

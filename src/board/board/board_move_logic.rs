@@ -31,7 +31,7 @@ impl Board
     /// ```
     pub fn parse_normal_move(&self, move_data: &MoveCommandData) -> Result<Move, MoveError>
     {
-        let starting_squares = match move_data.is_capture()
+        let starting_squares = match move_data.capture()
         {
             false => self.squares_of_type_that_can_move_to_square(self.active_color, move_data.piece_type(), move_data.target_square()),
             true => self.squares_of_type_that_can_capture_square(self.active_color, move_data.piece_type(), move_data.target_square()),
@@ -81,8 +81,6 @@ impl Board
     /// ```
     /// [TODO:write some example code]
     /// ```
-    // Ugh I hate how stupid this function is getting... I need to figure out a better way to
-    // do this lol
     pub fn squares_of_type_that_can_move_to_square(&self, piece_color: PlayerColor, piece_type: PieceType, square: Square) -> Vec<Square>
     {
         let piece_map = self.pieces_of_type(piece_type) & self.pieces_of_color(piece_color);
