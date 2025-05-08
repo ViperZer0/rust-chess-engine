@@ -1,11 +1,13 @@
 #![warn(missing_docs)]
 //! Documentation goes here
 
-use std::str::FromStr;
 
-use rust_chess_engine::{self, parse::MoveCommand};
+use rust_chess_engine::{agent::LocalAgent, game::Game};
 
 fn main() {
-    let next_move = MoveCommand::from_str("Rxb5").unwrap();
-    println!("{:?}", next_move);
+    let agent_white = LocalAgent;
+    let agent_black = LocalAgent;
+
+    let mut game = Game::new(agent_white, agent_black);
+    game.run();
 }

@@ -5,6 +5,8 @@
 pub mod parse;
 pub mod board;
 pub mod bitboard;
+pub mod agent;
+pub mod game;
 mod hashmap_diff;
 
 /// Defines the size of unsigned integers used to store and calculate square coordinates.
