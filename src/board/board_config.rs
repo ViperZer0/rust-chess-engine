@@ -81,6 +81,7 @@ impl CastlingAvailability
     /// # Examples
     ///
     /// ```
+    /// # use rust_chess_engine::board::CastlingAvailability;
     /// // CastlingAvailability state when the game starts.
     /// let castling_availability = CastlingAvailability::new(true, true, true, true);
     /// // CastlingAvailability state after both kings have moved.
@@ -130,7 +131,14 @@ impl CastlingAvailability
     /// # Examples
     ///
     /// ```
-    /// [TODO:write some example code]
+    /// # use rust_chess_engine::board::{CastlingAvailability, PlayerColor, Move, CastlingDirection};
+    /// let mut castling_availability = CastlingAvailability::new(true, true, true, true);
+    /// let r#move = Move::Castle(CastlingDirection::Kingside);
+    /// castling_availability.update_with_move(PlayerColor::White, &r#move);
+    /// assert!(!castling_availability.white_castle_kingside());
+    /// assert!(!castling_availability.white_castle_queenside());
+    /// assert!(castling_availability.black_castle_kingside());
+    /// assert!(castling_availability.black_castle_queenside());
     /// ```
     pub fn update_with_move(&mut self, moving_color: PlayerColor, r#move: &Move)
     {
@@ -237,10 +245,15 @@ impl BoardConfiguration
     /// # Examples
     ///
     /// ```
+    /// # use std::collections::HashMap;
+    /// # use rust_chess_engine::board::{CastlingAvailability, PlayerColor, BoardConfiguration};
     /// // This is more or less the bare minimum arguments to create a board configuration.
     /// // As mentioned above, you may want to consider BoardConfigurationBuilder instead.
-    /// let board_config = BoardConfiguration::new(HashMap::new(), PlayerColor::White,
-    /// CastlingAvailability::default(), None, 0, 1);
+    /// let board_config = BoardConfiguration::new(
+    ///     HashMap::new(),
+    ///     PlayerColor::White,
+    ///     CastlingAvailability::default(),
+    ///     None, 0, 1);
     /// ```
     pub fn new(pieces: HashMap<Square, Piece>, active_color: PlayerColor, castling_availability: CastlingAvailability, en_passant_target_square: Option<Square>, halfmove_clock: u8, fullmove_number: u8) -> Self
     {
@@ -273,6 +286,7 @@ impl Default for BoardConfiguration
     /// # Examples
     ///
     /// ```
+    /// # use rust_chess_engine::board::BoardConfiguration;
     /// let board_config = BoardConfiguration::default();
     /// ```
     fn default() -> Self {
@@ -343,7 +357,14 @@ impl FromStr for BoardConfiguration
     /// # Examples
     ///
     /// ```
-    /// [TODO:write some example code]
+    /// # use rust_chess_engine::board::BoardConfiguration;
+    /// # use std::str::FromStr;
+    /// // Default starting board layout
+    /// let board_config = BoardConfiguration::from_str("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+    /// assert!(board_config.is_ok());
+    /// // An invalid FEN
+    /// let board_config_2 = BoardConfiguration::from_str("Z/Z/Z/Z w KQkq - 0 1");
+    /// assert!(board_config_2.is_err());
     /// ```
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         // Get an iterator over the parts of the FEN string.
@@ -402,12 +423,6 @@ impl FromStr for BoardConfiguration
 /// An [InvalidFENError] is returned if the FEN notation is badly formatted for any reason. Parsing
 /// the pieces can fail if there are too few or too many ranks, or if an unexpected character was
 /// found in the string.
-///
-/// # Examples
-///
-/// ```
-/// [TODO:write some example code]
-/// ```
 fn parse_pieces(s: &str) -> Result<HashMap<Square, Piece>, InvalidFENError>
 {
     let mut map = HashMap::new();
@@ -510,6 +525,8 @@ impl FromStr for CastlingAvailability
     /// # Examples
     ///
     /// ```
+    /// # use std::str::FromStr;
+    /// # use rust_chess_engine::board::CastlingAvailability;
     /// // Default castling availability
     /// let castling_availability = CastlingAvailability::from_str("KQkq");
     /// // White has castled, Black has not.

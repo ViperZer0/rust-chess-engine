@@ -27,6 +27,7 @@ impl Not for PlayerColor
     /// # Examples
     ///
     /// ```
+    /// # use rust_chess_engine::board::PlayerColor;
     /// assert_eq!(PlayerColor::Black, !PlayerColor::White);
     /// assert_eq!(PlayerColor::White, !PlayerColor::Black);
     /// ```

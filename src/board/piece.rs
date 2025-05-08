@@ -24,6 +24,7 @@ impl Piece
     /// # Examples
     ///
     /// ```
+    /// # use rust_chess_engine::board::{PieceType, PlayerColor, Piece};
     /// let piece = Piece::new(PlayerColor::White, PieceType::Pawn);
     /// ```
     pub fn new(color: PlayerColor, piece_type: PieceType) -> Self
@@ -40,6 +41,7 @@ impl Piece
     /// # Examples
     ///
     /// ```
+    /// # use rust_chess_engine::board::{PieceType, PlayerColor, Piece};
     /// let piece = Piece::new(PlayerColor::White, PieceType::Pawn);
     /// assert_eq!(piece.piece_type(), PieceType::Pawn);
     /// ```
@@ -53,6 +55,7 @@ impl Piece
     /// # Examples
     ///
     /// ```
+    /// # use rust_chess_engine::board::{PieceType, PlayerColor, Piece};
     /// let piece = Piece::new(PlayerColor::White, PieceType::Pawn);
     /// assert_eq!(piece.color(), PlayerColor::White);
     /// ```

@@ -27,7 +27,17 @@ impl Board
     /// # Examples
     ///
     /// ```
-    /// [TODO:write some example code]
+    /// # use rust_chess_engine::board::{Board, Move, Square};
+    /// # use rust_chess_engine::parse::MoveCommand;
+    /// # use std::str::FromStr;
+    /// let board = Board::new_default_starting_board();
+    /// let move_command = MoveCommand::from_str("e4").unwrap();
+    /// let MoveCommand::NormalMove(move_data) = move_command else { unreachable!() };
+    /// let r#move = board.parse_normal_move(&move_data).unwrap();
+    /// let Move::NormalMove(r#move) = r#move else { unreachable!() };
+    /// assert_eq!(r#move.starting_square(), Square::new(1, 4));
+    /// assert_eq!(r#move.capture(), false);
+    /// assert_eq!(r#move.target_square(), Square::new(3, 4));
     /// ```
     pub fn parse_normal_move(&self, move_data: &MoveCommandData) -> Result<Move, MoveError>
     {
@@ -70,6 +80,11 @@ impl Board
     /// This function actually returns the SQUARES of all valid pieces that can move to that
     /// square, given they are of the right type and all.
     ///
+    /// If you want to see which pieces can *capture* a square, use
+    /// [Self::squares_of_type_that_can_capture_square], which is functionally identical for all
+    /// pieces except pawns which have a disjoint capture/move set.
+    ///
+    ///
     /// # Arguments
     ///
     /// * `piece_color` - The piece color to search for.
@@ -79,7 +94,15 @@ impl Board
     /// # Examples
     ///
     /// ```
-    /// [TODO:write some example code]
+    /// # use rust_chess_engine::board::{Board, PlayerColor, PieceType, Square};
+    /// # use std::str::FromStr;
+    /// let board = Board::new_default_starting_board();
+    /// let squares = board.squares_of_type_that_can_move_to_square(
+    ///     PlayerColor::White, PieceType::Pawn, Square::from_str("e4").unwrap()
+    /// );
+    /// // There should be one piece that can move to the specified square.
+    /// assert_eq!(squares.len(), 1);
+    /// assert!(squares.contains(&Square::from_str("e2").unwrap()));
     /// ```
     pub fn squares_of_type_that_can_move_to_square(&self, piece_color: PlayerColor, piece_type: PieceType, square: Square) -> Vec<Square>
     {
@@ -117,7 +140,17 @@ impl Board
     /// # Examples
     ///
     /// ```
-    /// [TODO:write some example code]
+    /// # use rust_chess_engine::board::{Board, BoardConfiguration, PlayerColor, PieceType, Square};
+    /// # use std::str::FromStr;
+    /// // Default board but with a black pawn on b3
+    /// let board = Board::new_board_with_configuration(&BoardConfiguration::from_str("rnbqkbnr/pppppppp/8/8/8/1p6/PPPPPPPP/RNBQKBNR b KQkq - 0 1").unwrap());
+    /// let squares = board.squares_of_type_that_can_capture_square(
+    ///     PlayerColor::White, PieceType::Pawn, Square::from_str("b3").unwrap()
+    /// );
+    /// // There should be two pawns that can capture on b3.
+    /// assert_eq!(squares.len(), 2);
+    /// assert!(squares.contains(&Square::from_str("a2").unwrap()));
+    /// assert!(squares.contains(&Square::from_str("c2").unwrap()));
     /// ```
     pub fn squares_of_type_that_can_capture_square(&self, piece_color: PlayerColor, piece_type: PieceType, target_square: Square) -> Vec<Square>
     {
@@ -143,6 +176,29 @@ impl Board
         ).collect()
     }
 
+    /// Similar to [Self::squares_of_type_that_can_capture_square] but instead of returning pieces
+    /// of a specific type this returns *all* pieces. 
+    ///
+    /// # Arguments
+    ///
+    /// * `attacking_color` - The attacking color
+    /// * `target_square` - The square to check for being targeted
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use rust_chess_engine::board::{Board, Square, PlayerColor, BoardConfiguration};
+    /// # use std::str::FromStr;
+    /// // Default board but with a black pawn on c3
+    /// let board = Board::new_board_with_configuration(&BoardConfiguration::from_str("rnbqkbnr/pppppppp/8/8/8/2p5/PPPPPPPP/RNBQKBNR b KQkq - 0 1").unwrap());
+    /// let squares = board.all_squares_that_can_capture_square(
+    ///     PlayerColor::White, Square::from_str("c3").unwrap()
+    /// );
+    /// assert_eq!(squares.len(), 3);
+    /// assert!(squares.contains(&Square::from_str("b2").unwrap()));
+    /// assert!(squares.contains(&Square::from_str("b1").unwrap()));
+    /// assert!(squares.contains(&Square::from_str("d3").unwrap()));
+    /// ```
     pub fn all_squares_that_can_capture_square(&self, attacking_color: PlayerColor, target_square: Square) -> Vec<Square>
     {
         let piece_map = self.pieces_of_color(attacking_color);

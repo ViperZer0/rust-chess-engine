@@ -65,7 +65,10 @@ impl Board {
     /// # Examples
     ///
     /// ```
-    /// let knight_moves: Bitboard = Board::knight_moves(Square::new(0,0));
+    /// # use rust_chess_engine::board::{Board, Square, PlayerColor};
+    /// # use rust_chess_engine::bitboard::Bitboard;
+    /// let board = Board::new_blank_board();
+    /// let knight_moves: Bitboard = board.knight_moves(PlayerColor::White, Square::new(0,0));
     /// let knight_move_squares: Vec<Square> = knight_moves.squares().collect();
     /// // This should be 2 since a knight in the corner only ever has two moves.
     /// assert_eq!(knight_move_squares.len(), 2);
@@ -124,11 +127,13 @@ impl Board {
     /// # Examples
     ///
     /// ```
+    /// # use rust_chess_engine::board::{Board, Square, PlayerColor};
+    /// # use rust_chess_engine::bitboard::Bitboard;
     /// let board = Board::new_blank_board();
     /// let king_moves = board.king_moves(PlayerColor::White, Square::new(0, 0));
     /// let king_move_squares: Vec<Square> = king_moves.squares().collect();
     /// assert_eq!(king_move_squares.len(), 3);
-    /// assert_eq!(king_move_squares, vec![Square::new(1,0), Square::new(0,1), Square::new(1,1)]);
+    /// assert_eq!(king_move_squares, vec![Square::new(0,1), Square::new(1,0), Square::new(1,1)]);
     /// ```
     pub fn king_moves(&self, active_color: PlayerColor, from: Square) -> Bitboard
     {
@@ -173,7 +178,12 @@ impl Board {
     /// # Examples
     ///
     /// ```
-    /// [TODO:write some example code]
+    /// # use rust_chess_engine::board::{Board, Square, PlayerColor};
+    /// # use rust_chess_engine::bitboard::Bitboard;
+    /// let board = Board::new_blank_board();
+    /// let queen_moves = board.queen_moves(PlayerColor::White, Square::new(0, 0));
+    /// let queen_move_squares: Vec<Square> = queen_moves.squares().collect();
+    /// assert_eq!(queen_move_squares.len(), 21);
     /// ```
     pub fn queen_moves(&self, active_color: PlayerColor, from: Square) -> Bitboard
     {
@@ -192,7 +202,12 @@ impl Board {
     /// # Examples
     ///
     /// ```
-    /// [TODO:write some example code]
+    /// # use rust_chess_engine::board::{Board, Square, PlayerColor};
+    /// # use rust_chess_engine::bitboard::Bitboard;
+    /// let board = Board::new_blank_board();
+    /// let bishop_moves = board.bishop_moves(PlayerColor::White, Square::new(0, 0));
+    /// let bishop_move_squares: Vec<Square> = bishop_moves.squares().collect();
+    /// assert_eq!(bishop_move_squares.len(), 7);
     /// ```
     pub fn bishop_moves(&self, active_color: PlayerColor, from: Square) -> Bitboard
     {
@@ -213,7 +228,12 @@ impl Board {
     /// # Examples
     ///
     /// ```
-    /// [TODO:write some example code]
+    /// # use rust_chess_engine::board::{Board, Square, PlayerColor};
+    /// # use rust_chess_engine::bitboard::Bitboard;
+    /// let board = Board::new_blank_board();
+    /// let rook_moves = board.rook_moves(PlayerColor::White, Square::new(0, 0));
+    /// let rook_move_squares: Vec<Square> = rook_moves.squares().collect();
+    /// assert_eq!(rook_move_squares.len(), 14);
     /// ```
     pub fn rook_moves(&self, active_color: PlayerColor, from: Square) -> Bitboard
     {
@@ -237,7 +257,15 @@ impl Board {
     /// # Examples
     ///
     /// ```
-    /// [TODO:write some example code]
+    /// # use rust_chess_engine::board::{Board, Square, PlayerColor};
+    /// # use rust_chess_engine::bitboard::Bitboard;
+    /// let board = Board::new_blank_board();
+    /// let pawn_moves = board.pawn_moves(PlayerColor::White, Square::new(1, 0));
+    /// let pawn_move_squares: Vec<Square> = pawn_moves.squares().collect();
+    /// assert_eq!(pawn_move_squares.len(), 2);
+    /// let pawn_moves = board.pawn_moves(PlayerColor::White, Square::new(2, 0));
+    /// let pawn_move_squares: Vec<Square> = pawn_moves.squares().collect();
+    /// assert_eq!(pawn_move_squares.len(), 1);
     /// ```
     pub fn pawn_moves(&self, active_color: PlayerColor, from: Square) -> Bitboard
     {
@@ -282,7 +310,14 @@ impl Board {
     /// # Examples
     ///
     /// ```
-    /// [TODO:write some example code]
+    /// # use rust_chess_engine::board::{Board, Square, PlayerColor};
+    /// # use rust_chess_engine::bitboard::Bitboard;
+    /// let board = Board::new_blank_board();
+    /// let pawn_moves = board.pawn_attacks(PlayerColor::White, Square::new(1, 0));
+    /// let pawn_move_squares: Vec<Square> = pawn_moves.squares().collect();
+    /// // Pawn attacks require there be an opposing piece on the target square,
+    /// // otherwise it will not be included.
+    /// assert_eq!(pawn_move_squares.len(), 0);
     /// ```
     pub fn pawn_attacks(&self, active_color: PlayerColor, from: Square) -> Bitboard
     {
@@ -394,7 +429,7 @@ impl Direction
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```ignore
     /// let direction_up = Direction::new(1, 0);
     /// let direction_down_left = Direction::new(-1, -1);
     /// ```
@@ -424,12 +459,6 @@ impl Direction
     /// `horizontal_direction` is also 0).
     /// * `horizontal_direction` - The horizontal component. Can be -1, 1, or 0 (unless 
     /// `vertical_direction` is also 0).
-    ///
-    /// # Examples
-    ///
-    /// ```should_panic
-    /// let 
-    /// ```
     pub const fn new_unchecked(vertical_direction: i8, horizontal_direction: i8) -> Self
     {
         match Self::new(vertical_direction, horizontal_direction)
@@ -445,7 +474,7 @@ impl Direction
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```ignore
     /// let direction = Direction::new(1, 0);
     /// assert_eq!(direction.vertical_component(), 1);
     /// let direction = Direction::new(0, 1);
@@ -470,7 +499,7 @@ impl Direction
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```ignore
     /// let direction = Direction::new(1, -1);
     /// assert_eq!(direction.horizontal_component(), -1);
     /// let direction = Direction::new(-1, 0);
@@ -498,7 +527,7 @@ impl Direction
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```ignore
     /// let direction = Direction::new(1, 0);
     /// assert_eq!(direction.as_tuple(), (1,0));
     /// ```

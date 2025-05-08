@@ -202,8 +202,9 @@ impl Bitboard
     /// # Examples
     ///
     /// ```
+    /// # use rust_chess_engine::bitboard::Bitboard;
     /// let bitboard = Bitboard::new(0);
-    /// assert_eq!(0, bitboard.into());
+    /// assert_eq!(0_u64, bitboard.into());
     /// ```
     pub const fn new(input: u64) -> Self
     {
@@ -221,8 +222,13 @@ impl Bitboard
     ///
     /// # Examples
     ///
-    /// ```
-    /// [TODO:write some example code]
+    /// ```should_panic
+    /// # use rust_chess_engine::bitboard::Bitboard;
+    /// # use rust_chess_engine::board::Square;
+    /// // This should work
+    /// let index = Bitboard::coords_to_index_unchecked(Square::new(0,0));
+    /// // This will panic at runtime
+    /// let index = Bitboard::coords_to_index_unchecked(Square::new(0,9));
     /// ```
     pub fn coords_to_index_unchecked(square: Square) -> u8
     {
@@ -241,8 +247,12 @@ impl Bitboard
     ///
     /// # Examples
     ///
-    /// ```
-    /// [TODO:write some example code]
+    /// ```should_panic
+    /// # use rust_chess_engine::bitboard::Bitboard;
+    /// // This should work
+    /// let square = Bitboard::index_to_coords_unchecked(0);
+    /// // This will panic at runtime.
+    /// let square = Bitboard::index_to_coords_unchecked(100);
     /// ```
     pub fn index_to_coords_unchecked(index: u8) -> Square
     {
@@ -263,7 +273,16 @@ impl Bitboard
     /// # Examples
     ///
     /// ```
-    /// [TODO:write some example code]
+    /// # use rust_chess_engine::bitboard::Bitboard;
+    /// # use rust_chess_engine::board::Square;
+    /// let index = Bitboard::coords_to_index(Square::new(0, 0)).unwrap();
+    /// assert_eq!(index, 0);
+    /// let index = Bitboard::coords_to_index(Square::new(0, 1)).unwrap();
+    /// assert_eq!(index, 1);
+    /// let index = Bitboard::coords_to_index(Square::new(1, 0)).unwrap();
+    /// assert_eq!(index, 8);
+    /// let index_error = Bitboard::coords_to_index(Square::new(10, 10));
+    /// assert!(index_error.is_err());
     /// ```
     pub fn coords_to_index(square: Square) -> Result<u8, OutOfBoundsError>
     {
@@ -285,7 +304,16 @@ impl Bitboard
     /// # Examples
     ///
     /// ```
-    /// [TODO:write some example code]
+    /// # use rust_chess_engine::bitboard::Bitboard;
+    /// # use rust_chess_engine::board::Square;
+    /// let square = Bitboard::index_to_coords(0).unwrap();
+    /// assert_eq!(square, Square::new(0, 0));
+    /// let square = Bitboard::index_to_coords(1).unwrap();
+    /// assert_eq!(square, Square::new(0, 1));
+    /// let square = Bitboard::index_to_coords(8).unwrap();
+    /// assert_eq!(square, Square::new(1, 0));
+    /// let square_result = Bitboard::index_to_coords(100);
+    /// assert!(square_result.is_err());
     /// ```
     pub fn index_to_coords(index: u8) -> Result<Square, OutOfBoundsError>
     {
@@ -309,9 +337,10 @@ impl Bitboard
     /// # Examples
     ///
     /// ```
-    /// assert_eq!(0b11111111, Bitboard::rank_mask(0));
-    /// assert_eq!(0b1111111100000000, Bitboard::rank_mask(1));
-    /// assert_eq!(0b111111110000000000000000, Bitboard::rank_mask(2));
+    /// # use rust_chess_engine::bitboard::Bitboard;
+    /// assert_eq!(0b11111111_u64, Bitboard::rank_mask(0).into());
+    /// assert_eq!(0b1111111100000000_u64, Bitboard::rank_mask(1).into());
+    /// assert_eq!(0b111111110000000000000000_u64, Bitboard::rank_mask(2).into());
     /// ```
     pub const fn rank_mask(rank: u8) -> Self
     {
@@ -332,9 +361,10 @@ impl Bitboard
     /// # Examples
     ///
     /// ```
-    /// assert_eq!(0b11111111, Bitboard::rank_mask_range(0..1));
-    /// assert_eq!(0b11111111111111111, Bitboard::rank_mask_range(0..2));
-    /// assert_eq!(0b1111111111111111100000000, Bitboard:rank_mask_range(1..3));
+    /// # use rust_chess_engine::bitboard::Bitboard;
+    /// assert_eq!(0b11111111_u64, Bitboard::rank_mask_iter(0..1).into());
+    /// assert_eq!(0b1111111111111111_u64, Bitboard::rank_mask_iter(0..2).into());
+    /// assert_eq!(0b111111111111111100000000_u64, Bitboard::rank_mask_iter(1..3).into());
     /// ```
     pub fn rank_mask_iter<I>(rank_iter: I) -> Self
     where I: IntoIterator<Item = u8>
@@ -359,9 +389,10 @@ impl Bitboard
     /// # Examples
     ///
     /// ```
-    /// assert_eq!(0x0101010101010101, Bitboard::file_mask(0));
-    /// assert_eq!(0x0202020202020202, Bitboard::file_mask(1));
-    /// assert_eq!(0x0404040404040404, Bitboard::file_mask(2));
+    /// # use rust_chess_engine::bitboard::Bitboard;
+    /// assert_eq!(0x0101010101010101_u64, Bitboard::file_mask(0).into());
+    /// assert_eq!(0x0202020202020202_u64, Bitboard::file_mask(1).into());
+    /// assert_eq!(0x0404040404040404_u64, Bitboard::file_mask(2).into());
     /// ```
     pub const fn file_mask(file: u8) -> Self
     {
@@ -398,9 +429,10 @@ impl Bitboard
     /// # Examples
     ///
     /// ```
-    /// assert_eq!(0x0101010101010101, Bitboard::file_mask_iter(0..1));
-    /// assert_eq!(0x0303030303030303, Bitboard::file_mask_iter(0..2));
-    /// assert_eq!(0x0606060606060606, Bitboard::file_mask_iter(1..2));
+    /// # use rust_chess_engine::bitboard::Bitboard;
+    /// assert_eq!(0x0101010101010101_u64, Bitboard::file_mask_iter(0..1).into());
+    /// assert_eq!(0x0303030303030303_u64, Bitboard::file_mask_iter(0..2).into());
+    /// assert_eq!(0x0606060606060606_u64, Bitboard::file_mask_iter(1..3).into());
     /// ```
     pub fn file_mask_iter<I>(files: I) -> Self
     where I: IntoIterator<Item = u8>
@@ -415,6 +447,8 @@ impl Bitboard
     /// # Examples
     ///
     /// ```
+    /// # use rust_chess_engine::board::Square;
+    /// # use rust_chess_engine::bitboard::Bitboard;
     /// // All bits set to 0.
     /// let bitboard = Bitboard::new(0);
     /// let squares: Vec<Square> = bitboard.squares().collect();
@@ -441,7 +475,17 @@ impl Bitboard
     /// # Examples
     ///
     /// ```
-    /// [TODO:write some example code]
+    /// # use rust_chess_engine::bitboard::Bitboard;
+    /// let bitboard = Bitboard::new(0);
+    /// for bit in 0..64
+    /// {
+    ///     assert!(!bitboard.is_bit_set(bit as u8));
+    /// }
+    /// let bitboard = Bitboard::new(u64::MAX);
+    /// for bit in 0..64
+    /// {
+    ///     assert!(bitboard.is_bit_set(bit as u8));
+    /// }
     /// ```
     pub fn is_bit_set(&self, index: u8) -> bool
     {
@@ -463,6 +507,7 @@ impl Bitboard
     /// # Examples
     ///
     /// ```
+    /// # use rust_chess_engine::bitboard::Bitboard;
     /// let mut bitboard = Bitboard::new(0);
     /// // Sets the 0th bit on
     /// let new_bitboard = bitboard.set_bit(0, true);
@@ -487,6 +532,7 @@ impl Bitboard
     /// # Examples
     ///
     /// ```
+    /// # use rust_chess_engine::bitboard::Bitboard;
     /// assert!(Bitboard::new(0).is_empty());
     /// assert!(!Bitboard::new(1).is_empty());
     /// ```
@@ -513,6 +559,8 @@ impl From<Square> for Bitboard
     /// # Examples
     ///
     /// ```
+    /// # use rust_chess_engine::bitboard::Bitboard;
+    /// # use rust_chess_engine::board::Square;
     /// let bitboard: Bitboard = Square::new(0,0).into();
     /// // Bitboard representation: 0b0000...001
     /// assert_eq!(Bitboard::new(1), bitboard);

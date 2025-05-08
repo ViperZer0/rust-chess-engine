@@ -2,7 +2,7 @@ use getset::CopyGetters;
 
 use crate::parse::MoveCommandData;
 
-use super::{PieceType, Square};
+use super::Square;
 
 /// The direction the player is castling.
 #[derive(Debug)]
@@ -67,7 +67,8 @@ impl MoveData
     /// # Examples
     ///
     /// ```
-    /// [TODO:write some example code]
+    /// # use rust_chess_engine::board::{MoveData, Square};
+    /// let move_data = MoveData::new(Square::new(0,0), Square::new(3,3), true);
     /// ```
     pub const fn new(starting_square: Square, target_square: Square, capture: bool) -> Self
     {
@@ -93,7 +94,13 @@ impl MoveData
     /// # Examples
     ///
     /// ```
-    /// [TODO:write some example code]
+    /// # use std::str::FromStr;
+    /// # use rust_chess_engine::parse::MoveCommandData;
+    /// # use rust_chess_engine::board::{Move, Square, MoveData};
+    /// let move_command_data = MoveCommandData::from_str("Nxe4").unwrap();
+    /// // This function does not ensure that the MoveData makes sense
+    /// // (i.e that the piece can move from the starting square to the target square)!!!
+    /// let r#move: MoveData = MoveData::from_move_command_data(&move_command_data, Square::new(2,6));
     /// ```
     pub fn from_move_command_data(move_command_data: &MoveCommandData, starting_square: Square) -> Self
     {

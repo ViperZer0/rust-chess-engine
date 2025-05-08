@@ -24,7 +24,10 @@ impl Board
         })
     }
 
-    /// Returns a [Vec] containing  all legal moves for a specific piece/square.
+    /// Returns a [Vec] containing all legal moves for a specific piece/square.
+    ///
+    /// Legal moves are moves that are both possible (following piece movement rules) but also
+    /// don't violate the rules of chess, namely leaving your king in check.
     ///
     /// # Arguments
     ///
@@ -35,7 +38,10 @@ impl Board
     /// # Examples
     ///
     /// ```
-    /// [TODO:write some example code]
+    /// # use rust_chess_engine::board::{Board, PlayerColor, Square};
+    /// let board = Board::new_default_starting_board();
+    /// let pawn_moves = board.generate_legal_moves_for_piece(PlayerColor::White, Square::new(1, 0));
+    /// assert_eq!(pawn_moves.len(), 2);
     /// ```
     pub fn generate_legal_moves_for_piece(&self, player_color: PlayerColor, starting_square: Square) -> Vec<Move>
     {
@@ -58,7 +64,8 @@ impl Board
             .collect()
     }
 
-    /// Returns a [Vec] containing all possible, *legal* moves a player can make.
+    /// Returns a [Vec] containing all possible, *legal* moves a player can make
+    /// with any of their pieces.
     ///
     /// # Arguments
     ///
@@ -67,7 +74,11 @@ impl Board
     /// # Examples
     ///
     /// ```
-    /// [TODO:write some example code]
+    /// # use rust_chess_engine::board::{Board, PlayerColor};
+    /// let board = Board::new_default_starting_board();
+    /// let all_moves = board.generate_moves_for_side(PlayerColor::White);
+    /// // White starts with 20 possible moves, 16 pawn moves and 4 knight moves.
+    /// assert_eq!(all_moves.len(), 20);
     /// ```
     pub fn generate_moves_for_side(&self, player_color: PlayerColor) -> Vec<Move>
     {

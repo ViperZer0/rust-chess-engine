@@ -20,7 +20,10 @@ impl Board
     /// # Examples
     ///
     /// ```
-    /// [TODO:write some example code]
+    /// # use rust_chess_engine::board::{Board, Move, MoveData, Square};
+    /// let board = Board::new_default_starting_board();
+    /// let r#move = Move::NormalMove(MoveData::new(Square::new(1,4), Square::new(3,4), false));
+    /// assert!(!board.move_leaves_king_in_check(&r#move));
     /// ```
     pub fn move_leaves_king_in_check(&self, r#move: &Move) -> bool
     {
@@ -37,7 +40,11 @@ impl Board
     /// # Examples
     ///
     /// ```
-    /// [TODO:write some example code]
+    /// # use rust_chess_engine::board::{Board, PlayerColor};
+    /// let board = Board::new_default_starting_board();
+    /// // Even though white can't acutally castle here,
+    /// // we can still check to see if castling *would* move through check.
+    /// assert!(!board.kingside_castle_moves_through_check(PlayerColor::White));
     /// ```
     pub fn kingside_castle_moves_through_check(&self, moving_color: PlayerColor) -> bool
     {
@@ -55,7 +62,11 @@ impl Board
     /// # Examples
     ///
     /// ```
-    /// [TODO:write some example code]
+    /// # use rust_chess_engine::board::{Board, PlayerColor};
+    /// let board = Board::new_default_starting_board();
+    /// // Even though white can't actually castle here,
+    /// // we can still check to see if castling *would* move through check.
+    /// assert!(!board.queenside_castle_moves_through_check(PlayerColor::White));
     /// ```
     pub fn queenside_castle_moves_through_check(&self, moving_color: PlayerColor) -> bool
     {
@@ -73,7 +84,12 @@ impl Board
     /// # Examples
     ///
     /// ```
-    /// [TODO:write some example code]
+    /// # use rust_chess_engine::board::{Board, CastlingDirection, PlayerColor};
+    /// let board = Board::new_default_starting_board();
+    /// assert!(!board.has_castled_already(PlayerColor::White, CastlingDirection::Kingside));
+    /// assert!(!board.has_castled_already(PlayerColor::White, CastlingDirection::Queenside));
+    /// assert!(!board.has_castled_already(PlayerColor::Black, CastlingDirection::Kingside));
+    /// assert!(!board.has_castled_already(PlayerColor::Black, CastlingDirection::Queenside));
     /// ```
     pub fn has_castled_already(&self, color: PlayerColor, check_direction: CastlingDirection) -> bool
     {

@@ -35,12 +35,13 @@ impl<'a> BoardQuery<'a, Bitboard>
     /// # Examples
     ///
     /// ```
+    /// # use rust_chess_engine::board::{Square, PlayerColor, Board};
     /// // Make a new "standard" board.
     /// let board = Board::new_default_starting_board();
     /// // This should return true. There IS a white piece at 0, 0 (the white rook)
-    /// assert!(board.query().color(PlayerColor::White).piece_at(Square::new(0,0)).unwrap().result())
+    /// assert!(board.query().color(PlayerColor::White).piece_at(Square::new(0,0)).unwrap().result());
     /// // This should return FALSE. There is not a black piece at 0, 0.
-    /// assert!(!board.query().color(PlayerColor::Black).piece_at(Square::new(0,0)).unwrap().result())
+    /// assert!(!board.query().color(PlayerColor::Black).piece_at(Square::new(0,0)).unwrap().result());
     /// ```
     pub fn color(self, color: PlayerColor) -> Self
     {
@@ -68,6 +69,7 @@ impl<'a> BoardQuery<'a, Bitboard>
     /// # Examples
     ///
     /// ```
+    /// # use rust_chess_engine::board::{Square, PieceType, Board};
     /// let board = Board::new_default_starting_board();
     /// // This should return true since there is a rook at 0, 0.
     /// assert!(board.query().piece_type(PieceType::Rook).piece_at(Square::new(0,0)).unwrap().result());
@@ -116,6 +118,7 @@ impl<'a> BoardQuery<'a, Bitboard>
     /// # Examples
     ///
     /// ```
+    /// # use rust_chess_engine::board::{Square, PieceType, PlayerColor, Board};
     /// let board = Board::new_default_starting_board();
     /// // Yes, there should be a piece (any piece) at 0,0.
     /// assert!(board.query().piece_at(Square::new(0,0)).unwrap().result());
@@ -156,9 +159,10 @@ impl Board
     /// # Examples
     ///
     /// ```
+    /// # use rust_chess_engine::board::{Square, Board};
     /// let board = Board::new_default_starting_board();
     /// // Yes, there should be a piece at 0, 0 (a rook)
-    /// assert!(board.query().is_piece_at(Square::new(0, 0)).result());
+    /// assert!(board.query().piece_at(Square::new(0, 0)).unwrap().result());
     /// ```
     pub fn query(&self) -> BoardQuery<'_, Bitboard>
     {

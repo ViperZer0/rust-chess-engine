@@ -20,6 +20,7 @@
 //! given by [BoardConfiguration]
 //!
 //! ```
+//! # use rust_chess_engine::board::Board;
 //! // Default, "standard" board
 //! let board = Board::new_default_starting_board();
 //! ```
@@ -28,17 +29,20 @@
 //! [BoardConfigurationBuilder]
 //!
 //! ```
+//! # use rust_chess_engine::board::{Board, BoardConfiguration};
 //! // This creates a board configuration for a "normal" starting board.
-//! let board_configuration = BoardConfiguration::default()
+//! let board_configuration = BoardConfiguration::default();
 //! let board = Board::new_default_starting_board();
 //! // BoardConfiguration implements PartialEq, so these two versions
 //! // should produce the same board configuration.
-//! assert_eq!(board.get_board_configuration(), board_configuration);
+//! assert_eq!(board.board_configuration(), board_configuration);
 //! ```
 //!
 //! Generally, using a [FEN](https://en.wikipedia.org/wiki/Forsyth%E2%80%93Edwards_Notation) record is probably easier to produce a starting board configuration 
 //! than building it programatically.
 //! ```
+//! # use rust_chess_engine::board::BoardConfiguration;
+//! # use std::str::FromStr;
 //! let board_configuration = BoardConfiguration::from_str("k7/2p2p2/2p2p2/8/1p4p1/2pppp2/8/K7 w - - 0 1");
 //! ```
 //!
@@ -46,8 +50,9 @@
 //! probably the easiest and most flexible way to construct it.
 //!
 //! ```
-//! let mut board_configuration_builder = BoardConfigurationBuilder::default();
-//! board_configuration_builder
+//! # use rust_chess_engine::board::{Board, BoardConfigurationBuilder, PlayerColor};
+//! # use rust_chess_engine::board::{PieceType, Square, Piece};
+//! let board_configuration_builder = BoardConfigurationBuilder::default()
 //!     .add_piece(Piece::new(PlayerColor::White, PieceType::Pawn),Square::new(0,0))
 //!     .set_active_color(PlayerColor::White);
 //!
@@ -68,11 +73,11 @@ mod board_result;
 pub use line::Line;
 pub use square::Square;
 pub use piece_type::PieceType;
-pub use r#move::Move;
+pub use r#move::MoveData;
+pub use r#move::{Move, CastlingDirection};
 pub use board::Board;
 pub use player_color::PlayerColor;
 pub use piece::Piece;
 pub use board_config::{BoardConfiguration, CastlingAvailability, BoardConfigurationBuilder, InvalidFENError};
 pub use board_result::{BoardResult, DrawReason};
 pub use error::MoveError;
-

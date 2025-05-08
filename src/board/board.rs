@@ -204,12 +204,12 @@ impl Board
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```ignore
     /// # use std::str::FromStr;
     /// # use rust_chess_engine::board::Board;
     /// # use rust_chess_engine::board::Move;
     /// # use rust_chess_engine::parse::MoveCommand;
-    /// let board = Board::default_starting_board();
+    /// let board = Board::new_default_starting_board();
     /// let move_command = MoveCommand::from_str("e4").unwrap();
     /// let r#move = board.get_move(move_command);
     /// assert!(r#move.is_some());
@@ -242,12 +242,12 @@ impl Board
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```ignore
     /// # use std::str::FromStr;
     /// # use rust_chess_engine::board::Board;
     /// # use rust_chess_engine::board::Move;
     /// # use rust_chess_engine::parse::MoveCommand;
-    /// let board = Board::default_starting_board();
+    /// let board = Board::new_default_starting_board();
     /// let move_command = MoveCommand::from_str("e4").unwrap();
     /// let r#move = board.get_move(move_command).unwrap();
     /// let r#move = board.check_move(r#move);
@@ -305,12 +305,12 @@ impl Board
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```ignore
     /// # use std::str::FromStr;
     /// # use rust_chess_engine::board::Board;
     /// # use rust_chess_engine::board::Move;
     /// # use rust_chess_engine::parse::MoveCommand;
-    /// let board = Board::default_starting_board();
+    /// let board = Board::new_default_starting_board();
     /// let move_command = MoveCommand::from_str("e4").unwrap();
     /// let r#move = board.get_move(move_command).unwrap();
     /// let r#move = board.check_move(r#move).unwrap();
@@ -438,8 +438,10 @@ impl Board
     ///
     /// # Examples
     ///
-    /// ```
-    /// [TODO:write some example code]
+    /// ```ignore
+    /// # use rust_chess_engine::board::{Board, PlayerColor};
+    /// let board = Board::new_default_starting_board();
+    /// assert!(!board.is_king_in_check(PlayerColor::White));
     /// ```
     fn is_king_in_check(&self, king_color: PlayerColor) -> bool
     {

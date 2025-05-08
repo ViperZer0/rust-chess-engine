@@ -9,10 +9,11 @@ impl Board
 {
     /// Gets the bitboard corresponding with pieces of a specific color.
     /// 
-    /// This is private and only used for internal operations within [Board].
-    ///
+    /// This is intended internal operations within [Board].
     /// If you are an external user, you should use the [BoardQuery](super::board_query) API.
     ///
+    /// To get pieces of both a specific color and type, get a [Bitboard] for piece types and 
+    /// one for piece colors and use [&](core::ops::BitAnd) to get the intersection of both.
     ///
     /// # Arguments
     ///
@@ -21,7 +22,10 @@ impl Board
     /// # Examples
     ///
     /// ```
-    /// [TODO:write some example code]
+    /// # use rust_chess_engine::board::{Board, PlayerColor};
+    /// let board = Board::new_default_starting_board();
+    /// let white_pieces = board.pieces_of_color(PlayerColor::White);
+    /// let black_pieces = board.pieces_of_color(PlayerColor::Black);
     /// ```
     pub fn pieces_of_color(&self, color: PlayerColor) -> Bitboard
     {
@@ -36,6 +40,9 @@ impl Board
     /// [Self::pieces_of_color], but returns a &mut [Bitboard] instead of a copy of the bitboard,
     /// allowing the internal bitboard to be modified.
     ///
+    /// Be careful with this! Boards are intended to be immutable, this function is intended for
+    /// internal use only!
+    ///
     /// # Arguments
     ///
     /// * `color` - The player color to select the bitboard of.
@@ -43,7 +50,11 @@ impl Board
     /// # Examples
     ///
     /// ```
-    /// [TODO:write some example code]
+    /// # use rust_chess_engine::board::{Board, PlayerColor};
+    /// # use rust_chess_engine::bitboard::Bitboard;
+    /// let mut board = Board::new_default_starting_board();
+    /// let mut white_pieces = board.pieces_of_color_as_mut(PlayerColor::White);
+    /// white_pieces.set_bit(10, true);
     /// ```
     pub fn pieces_of_color_as_mut(&mut self, color: PlayerColor) -> &mut Bitboard
     {
@@ -55,8 +66,12 @@ impl Board
     }
 
     /// Gets the bitboard corresponding with pieces of a specific type. 
+    ///
     /// As with [Self::pieces_of_color] this is an internal operation. If you're an external user,
     /// you should use the [BoardQuery](super::board_query) API instead.
+    ///
+    /// To get pieces of both a specific color and type, get a [Bitboard] for piece types and 
+    /// one for piece colors and use [&](core::ops::BitAnd) to get the intersection of both.
     ///
     /// # Arguments
     ///
@@ -65,7 +80,9 @@ impl Board
     /// # Examples
     ///
     /// ```
-    /// [TODO:write some example code]
+    /// # use rust_chess_engine::board::{Board, PieceType};
+    /// let board = Board::new_default_starting_board();
+    /// let knights = board.pieces_of_type(PieceType::Knight);
     /// ```
     pub fn pieces_of_type(&self, piece_type: PieceType) -> Bitboard
     {
@@ -92,7 +109,11 @@ impl Board
     /// # Examples
     ///
     /// ```
-    /// [TODO:write some example code]
+    /// # use rust_chess_engine::board::{Board, PieceType};
+    /// # use rust_chess_engine::bitboard::Bitboard;
+    /// let mut board = Board::new_default_starting_board();
+    /// let mut pawn_pieces = board.pieces_of_type_as_mut(PieceType::Pawn);
+    /// pawn_pieces.set_bit(10, true);
     /// ```
     pub fn pieces_of_type_as_mut(&mut self, piece_type: PieceType) -> &mut Bitboard
     {
