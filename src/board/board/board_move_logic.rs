@@ -3,7 +3,7 @@
 //!
 //! This is all private to [Board](super::Board), it's just meant to clean up the module a bit.
 
-use crate::{bitboard::Bitboard, board::{r#move::MoveData, Move, MoveError, PieceType, PlayerColor, Square}, parse::MoveCommandData};
+use crate::{bitboard::Bitboard, board::{r#move::MoveData, piece_type::PIECE_TYPES, Move, MoveError, PieceType, PlayerColor, Square}, parse::MoveCommandData};
 
 use super::Board;
 
@@ -194,18 +194,17 @@ impl Board
     /// let squares = board.all_squares_that_can_capture_square(
     ///     PlayerColor::White, Square::from_str("c3").unwrap()
     /// );
+    /// println!("{:?}", squares);
     /// assert_eq!(squares.len(), 3);
     /// assert!(squares.contains(&Square::from_str("b2").unwrap()));
     /// assert!(squares.contains(&Square::from_str("b1").unwrap()));
-    /// assert!(squares.contains(&Square::from_str("d3").unwrap()));
+    /// assert!(squares.contains(&Square::from_str("d2").unwrap()));
     /// ```
     pub fn all_squares_that_can_capture_square(&self, attacking_color: PlayerColor, target_square: Square) -> Vec<Square>
     {
-        let piece_map = self.pieces_of_color(attacking_color);
-
-        // Check every single attacking piece to see if it can attack the target square lmao.
-        piece_map.squares().map(
-            |square| self.squares_of_type_that_can_capture_square(attacking_color, self.piece_at(&square).expect("Somehow there wasn't a piece at this square???").piece_type(), target_square)
+        // Check every single attacking piece type to see if it can attack the target square lmao.
+        PIECE_TYPES.iter().map(
+            |piece_type| self.squares_of_type_that_can_capture_square(attacking_color, *piece_type, target_square)
         ).collect::<Vec<Vec<Square>>>().concat()
     }
 }

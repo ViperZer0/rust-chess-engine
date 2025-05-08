@@ -4,6 +4,14 @@ use std::str::FromStr;
 
 use crate::parse::NotationParseError;
 
+pub const PIECE_TYPES: [PieceType; 6] = [
+    PieceType::Pawn,
+    PieceType::Knight,
+    PieceType::Bishop,
+    PieceType::Rook,
+    PieceType::Queen,
+    PieceType::King];
+
 /// One of the six valid chess piece types.
 /// Can be:
 /// - Pawn

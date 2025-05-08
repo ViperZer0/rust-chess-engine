@@ -93,7 +93,7 @@ impl Board
     /// ```
     pub fn has_castled_already(&self, color: PlayerColor, check_direction: CastlingDirection) -> bool
     {
-        match (color, check_direction)
+        !match (color, check_direction)
         {
             (PlayerColor::White, CastlingDirection::Kingside) => *self.castling_availability.white_castle_kingside(),
             (PlayerColor::White, CastlingDirection::Queenside) => *self.castling_availability.white_castle_queenside(),
