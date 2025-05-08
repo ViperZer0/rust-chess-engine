@@ -1,5 +1,7 @@
 use std::{collections::HashMap, fmt::Display};
 
+use getset::CopyGetters;
+
 use crate::{bitboard::Bitboard, board::{DrawReason, PieceType, PlayerColor}, parse::MoveCommand};
 
 use super::{board_config::BoardConfigurationBuilder, error::MoveError, r#move::{CastlingDirection, Move}, BoardConfiguration, BoardResult, CastlingAvailability, Piece, Square};
@@ -17,7 +19,7 @@ mod mut_get_bitboards;
 /// maintain the internal state and not violate the rules of chess or anything. Boards are
 /// immutable: making moves on a board does not modify the existing board but instead returns a new
 /// one.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, CopyGetters)]
 pub struct Board 
 {
     /// Tracks what piece is on a given square.
@@ -39,6 +41,8 @@ pub struct Board
     pawn_pieces: Bitboard,
 
     // Other board state stuff
+    /// Gets the color active/waiting player.
+    #[getset(get_copy="pub")]
     active_color: PlayerColor,
     castling_availability: CastlingAvailability,
     en_passant_target_square: Option<Square>,

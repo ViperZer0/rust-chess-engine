@@ -53,8 +53,14 @@ where A1: Agent, A2: Agent
     ///
     fn next_round(&mut self)
     {
-        self.current_board = Self::agent_turn(&self.current_board, &mut self.agent_white);
-        self.current_board = Self::agent_turn(&self.current_board, &mut self.agent_black);
+        if self.current_board.game_result().is_in_progress()
+        {
+            self.current_board = Self::agent_turn(&self.current_board, &mut self.agent_white);
+        }
+        if self.current_board.game_result().is_in_progress()
+        {
+            self.current_board = Self::agent_turn(&self.current_board, &mut self.agent_black);
+        }
     }
 
     /// Progresses the game by one "turn",

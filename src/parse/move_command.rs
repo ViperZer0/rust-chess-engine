@@ -134,10 +134,11 @@ impl FromStr for MoveCommand
     type Err = NotationParseError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s
+        let new_s = s.trim().to_lowercase();
+        match &new_s as &str
         {
-            "o-o" | "O-O" => Ok(Self::KingsideCastle),
-            "o-o-o" | "O-O-O" => Ok(Self::QueensideCastle),
+            "o-o" => Ok(Self::KingsideCastle),
+            "o-o-o" => Ok(Self::QueensideCastle),
             other => Ok(Self::NormalMove(MoveCommandData::from_str(other)?)),
         }
     }

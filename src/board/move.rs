@@ -5,7 +5,7 @@ use crate::parse::MoveCommandData;
 use super::Square;
 
 /// The direction the player is castling.
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone)]
 pub enum CastlingDirection
 {
     Kingside,
@@ -32,7 +32,7 @@ pub enum CastlingDirection
 /// But doesn't check things like:
 /// - Occupancy in line of sight
 /// - Whether the king is in check
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone)]
 pub enum Move
 {
     /// Basically any move that is not a castle.
@@ -44,12 +44,15 @@ pub enum Move
 }
 
 /// Contains information about the move relevant to the [crate::board::Board]
-#[derive(Debug, CopyGetters)]
+#[derive(Debug, CopyGetters, Copy, Clone)]
 #[getset(get_copy="pub")]
 pub struct MoveData
 {
+    /// The square that the move starts on
     starting_square: Square,
+    /// Whether or not this move is a capture
     capture: bool,
+    /// The square that this move ends on
     target_square: Square,
 }
 
