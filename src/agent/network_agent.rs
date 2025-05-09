@@ -2,12 +2,36 @@
 //! which allow two players to play over a network. Each player locally has a [LocalNetworkAgent]
 //! and the other player is treated as a [RemoteNetworkAgent], waiting for moves to come in.
 
-use std::{io::{Read, Write}, net::{TcpListener, TcpStream, ToSocketAddrs}};
+use std::net::{TcpListener, TcpStream, ToSocketAddrs};
 
 use crate::board::{Board, Move};
 
 use super::{Agent, LocalAgent};
 
+/// Opens up a [TcpListener] and blocks and waits for a connection.
+///
+/// Once a client connects to the listener, this function returns a tuple containing
+/// a [LocalNetworkAgent] and a [RemoteNetworkAgent] in that order.
+///
+/// Both of the network agents operate on the opened [TcpStream].
+///
+/// # Arguments
+///
+/// * `addr` - The address to bind and listen for connections on. Accepts any [ToSocketAddrs]
+///
+/// # Panics
+///
+/// This function panics if any network operation fails.
+///
+/// # Examples
+///
+/// ```no_run
+/// // Blocks until a client connects
+/// let (agent_1, agent_2) = host("127.0.0.1:8080");
+/// // Start the game with the host and client as white and black respectively.
+/// let mut game = Game::new(agent_1, agent_2);
+/// game.run();
+/// ```
 pub fn host<A: ToSocketAddrs>(addr: A) -> (LocalNetworkAgent, RemoteNetworkAgent)
 {
     let listener = TcpListener::bind(addr).unwrap();
@@ -18,6 +42,45 @@ pub fn host<A: ToSocketAddrs>(addr: A) -> (LocalNetworkAgent, RemoteNetworkAgent
     }
 }
 
+/// This function is the counterpart to [host]. This function connects to a waiting/listening
+/// [TcpListener] and opens up a new [TcpStream]. When the connection is accepted,
+/// this returns a [RemoteNetworkAgent] and a [LocalNetworkAgent] respectively.
+///
+/// Note that the order of the tuple is flipped in comparison to [host]. This is intentional.
+///
+/// If a game on one client is started with 
+///
+/// ```no_run
+/// let (local_agent, remote_agent) = host("127.0.0.1:8080");
+/// let mut game = Game::new(local_agent, remote_agent);
+/// ```
+///
+/// The game on the other client should be started with
+/// ```no_run
+/// let (remote_agent, local_agent) = connect("127.0.0.1:8080");
+/// let mut game = Game::new(remote_agent, local_agent);
+/// ```
+///
+/// Here in the second example `remote_agent` corresponds to the first example's
+/// `local_agent`, and vice versa. White is the first player, local in example 1
+/// and remote in example 2, and Black is the second player, remote in example 1 
+/// and local in example 2.
+///
+/// # Arguments
+///
+/// * `addr` - The address to connect to. This can be any [ToSocketAddrs]
+///
+/// # Panics
+///
+/// Panics if something goes wrong with the connection or cloning the [TcpStream]
+///
+/// # Examples
+///
+/// ```no_run
+/// let (agent_1, agent_2) = connect("127.0.0.1:8080");
+/// let mut game = Game::new(agent_1, agent_2);
+/// game.run();
+/// ```
 pub fn connect<A: ToSocketAddrs>(addr: A) -> (RemoteNetworkAgent, LocalNetworkAgent)
 {
     if let Ok(stream) = TcpStream::connect(addr)
