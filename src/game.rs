@@ -2,7 +2,7 @@
 
 use getset::Getters;
 
-use crate::{agent::Agent, board::Board};
+use crate::{agent::Agent, board::{Board, Move, MoveError}};
 
 /// A game of chess!!!
 pub struct Game<A1, A2>
@@ -22,6 +22,32 @@ pub struct GameState
 {
     /// Gets the current [Board].
     current_board: Board,
+}
+
+impl GameState
+{
+    /// Makes a [Move] on a [Board] 
+    /// and updates the state of the game accordingly.
+    ///
+    /// # Arguments
+    ///
+    /// * `r#move` - The move to make
+    ///
+    /// # Errors
+    ///
+    /// Returns a [MoveError] if [Board::attempt_move] failed.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// ```
+    pub fn update(&self, r#move: &Move) -> Result<Self, MoveError>
+    {
+        Ok(Self
+        {
+            current_board: self.current_board.attempt_move(r#move)?,
+        })
+    }
 }
 
 impl<A1, A2> Game<A1, A2>
@@ -71,11 +97,11 @@ where A1: Agent, A2: Agent
     {
         if self.game_state.current_board().game_result().is_in_progress()
         {
-            self.game_state.current_board = Self::agent_turn(&self.game_state, &mut self.agent_white);
+            self.game_state = Self::agent_turn(&self.game_state, &mut self.agent_white);
         }
         if self.game_state.current_board().game_result().is_in_progress()
         {
-            self.game_state.current_board = Self::agent_turn(&self.game_state, &mut self.agent_black);
+            self.game_state = Self::agent_turn(&self.game_state, &mut self.agent_black);
         }
     }
 
@@ -86,21 +112,21 @@ where A1: Agent, A2: Agent
     ///
     /// * `agent` - The agent taking their turn.
     ///
-    fn agent_turn<A: Agent>(game_state: &GameState, agent: &mut A) -> Board
+    fn agent_turn<A: Agent>(game_state: &GameState, agent: &mut A) -> GameState
     {
         loop
         {
             let move_request = agent.agent_move_request(game_state);
-            let new_board_result = game_state.current_board().attempt_move(&move_request);
-            match new_board_result
+            let new_game_state = game_state.update(&move_request);
+            match new_game_state
             {
                 Err(error) => {
                     println!("Error making move! {}", error);
                     continue;
                 },
-                Ok(new_board) =>
+                Ok(new_game_state) =>
                 {
-                    return new_board;
+                    return new_game_state;
                 }
             }
         }

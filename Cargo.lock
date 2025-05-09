@@ -721,6 +721,7 @@ dependencies = [
  "log",
  "postcard",
  "rand",
+ "rayon",
  "regex",
  "serde",
  "thiserror",

@@ -2,6 +2,7 @@
 
 use std::cmp::Ordering;
 use derive_more::From;
+use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 use crate::board::{BoardResult, PieceType, PlayerColor};
 use super::Board;
 
@@ -170,31 +171,18 @@ impl Board
                 }
 
                 // Recurse through all possible future positions... to a point...
-                // We start by either maximizing or minimizing the score based on which side we're
-                // playing
-                let mut score = match self.active_color()
+                let score = self.generate_moves_for_side(self.active_color()).par_iter()
+                        .map(|r#move| {
+                            let future_board = self.make_move(&r#move);
+                            future_board.evaluate(evaluation_weights, depth - 1)
+                        })
+                        .reduce_with(
+                            |a, b| match self.active_color()
                 {
-                    // If we're trying to maximize the score assume the score is the worst possible
-                    PlayerColor::White => Evaluation::BlackWin,
-                    PlayerColor::Black => Evaluation::WhiteWin,
-                };
-                for r#move in self.generate_moves_for_side(self.active_color())
-                {
-                    let future_board = self.make_move(&r#move);
-                    score = match self.active_color()
-                    {
-                        // White wants to maximize score, so we assume white chooses the best possible
-                        // move.
-                        PlayerColor::White => {
-                            Evaluation::max(score, future_board.evaluate(evaluation_weights, depth - 1))
-                        }
-                        // Black wants to minimize score, so we assume black chooses the "worst"
-                        // (most negative) move.
-                        PlayerColor::Black => {
-                            Evaluation::min(score, future_board.evaluate(evaluation_weights, depth - 1))
-                        }
-                    }
-                }
+                    PlayerColor::White => Ord::max(a,b),
+                    PlayerColor::Black => Ord::min(a,b),
+                }).expect("No moves were found!");
+
                 // Once we're done evaluating the position, see what the score is and modify it a
                 // little bit (Basically WhiteWin turns into WhiteCheckmateIn(1), etc.)
                 match score
