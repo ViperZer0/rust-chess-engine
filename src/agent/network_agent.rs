@@ -4,7 +4,7 @@
 
 use std::net::{TcpListener, TcpStream, ToSocketAddrs};
 
-use crate::board::{Board, Move};
+use crate::{board::Move, game::GameState};
 
 use super::{Agent, LocalAgent};
 
@@ -117,15 +117,15 @@ impl LocalNetworkAgent
 
 impl Agent for LocalNetworkAgent
 {
-    fn agent_move_request(&mut self, board: &Board) -> Move {
+    fn agent_move_request(&mut self, game_state: &GameState) -> Move {
         loop 
         {
-            let r#move = self.inner_agent.agent_move_request(board);
+            let r#move = self.inner_agent.agent_move_request(game_state);
             // This may be a mistake having the local agent validate its own move before sending it
             // instead of just improving the board error check code...
             //
             // But there's no reason we can't just validate the move here.
-            let new_board_result = board.attempt_move(&r#move);
+            let new_board_result = game_state.current_board().attempt_move(&r#move);
             match new_board_result
             {
                 Err(error) => {
@@ -164,8 +164,8 @@ impl RemoteNetworkAgent
 
 impl Agent for RemoteNetworkAgent
 {
-    fn agent_move_request(&mut self, board: &Board) -> Move {
-        println!("{}", board);
+    fn agent_move_request(&mut self, game_state: &GameState) -> Move {
+        println!("{}", game_state.current_board());
         println!("Waiting for player's move...");
         let mut buffer: Vec<u8> = Vec::new();
         let r#move: Move = postcard::from_io((&self.stream, &mut buffer)).expect("Couldn't read move from stream!").0;

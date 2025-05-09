@@ -4,7 +4,7 @@
 use std::io;
 use std::str::FromStr;
 
-use crate::{board::{Board, Move}, parse::MoveCommand};
+use crate::{board::Move, game::GameState, parse::MoveCommand};
 
 use super::Agent;
 
@@ -14,10 +14,10 @@ pub struct LocalAgent;
 
 impl Agent for LocalAgent
 {
-    fn agent_move_request(&mut self, board: &Board) -> Move {
+    fn agent_move_request(&mut self, game_state: &GameState) -> Move {
         loop 
         {
-            println!("{}", board);
+            println!("{}", game_state.current_board());
             println!("Please enter your next move: ");
             let mut input = String::new();
             let result = io::stdin().read_line(&mut input);
@@ -33,7 +33,7 @@ impl Agent for LocalAgent
                 continue;
             }
             let move_command = move_command.unwrap();
-            let r#move = board.get_move(&move_command);
+            let r#move = game_state.current_board().get_move(&move_command);
             if let Err(error) = r#move
             {
                 println!("Impossible move: {}", error);

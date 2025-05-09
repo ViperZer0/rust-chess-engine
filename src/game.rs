@@ -1,14 +1,27 @@
 //! This module implements the main game loop
 
+use getset::Getters;
+
 use crate::{agent::Agent, board::Board};
 
 /// A game of chess!!!
 pub struct Game<A1, A2>
 where A1: Agent, A2: Agent
 {
-    current_board: Board,
+    game_state: GameState,
     agent_white: A1,
     agent_black: A2,
+}
+
+/// Holds the current board.
+/// Will also probably hold things like the board history 
+/// and the last made move so specific agents can use them when needed.
+#[derive(Getters)]
+#[getset(get="pub")]
+pub struct GameState
+{
+    /// Gets the current [Board].
+    current_board: Board,
 }
 
 impl<A1, A2> Game<A1, A2>
@@ -27,7 +40,10 @@ where A1: Agent, A2: Agent
     {
         Self
         {
-            current_board: Board::new_default_starting_board(),
+            game_state: GameState
+            {
+                current_board: Board::new_default_starting_board(),
+            },
             agent_white,
             agent_black,
         }
@@ -36,14 +52,14 @@ where A1: Agent, A2: Agent
     /// Runs the full game until the game is over
     pub fn run(&mut self) 
     {
-        while self.current_board.game_result().is_in_progress()
+        while self.game_state.current_board().game_result().is_in_progress()
         {
             self.next_round()
         }
 
         // Once the game is over we do something idk
         println!("Game is over!");
-        println!("Result: {:?}", self.current_board.game_result());
+        println!("Result: {:?}", self.game_state.current_board().game_result());
     }
 
     /// Progresses the game by one "round", i.e
@@ -53,13 +69,13 @@ where A1: Agent, A2: Agent
     ///
     fn next_round(&mut self)
     {
-        if self.current_board.game_result().is_in_progress()
+        if self.game_state.current_board().game_result().is_in_progress()
         {
-            self.current_board = Self::agent_turn(&self.current_board, &mut self.agent_white);
+            self.game_state.current_board = Self::agent_turn(&self.game_state, &mut self.agent_white);
         }
-        if self.current_board.game_result().is_in_progress()
+        if self.game_state.current_board().game_result().is_in_progress()
         {
-            self.current_board = Self::agent_turn(&self.current_board, &mut self.agent_black);
+            self.game_state.current_board = Self::agent_turn(&self.game_state, &mut self.agent_black);
         }
     }
 
@@ -70,12 +86,12 @@ where A1: Agent, A2: Agent
     ///
     /// * `agent` - The agent taking their turn.
     ///
-    fn agent_turn<A: Agent>(board: &Board, agent: &mut A) -> Board
+    fn agent_turn<A: Agent>(game_state: &GameState, agent: &mut A) -> Board
     {
         loop
         {
-            let move_request = agent.agent_move_request(board);
-            let new_board_result = board.attempt_move(&move_request);
+            let move_request = agent.agent_move_request(game_state);
+            let new_board_result = game_state.current_board().attempt_move(&move_request);
             match new_board_result
             {
                 Err(error) => {

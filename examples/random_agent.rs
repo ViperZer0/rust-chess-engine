@@ -5,7 +5,9 @@ mod random_agent
     //! This module implements [RandomAgent], an [Agent]
     //! that makes random moves. Pretty useless except for debugging.
 
-    use crate::board::{Board, Move};
+    use rust_chess_engine::game::GameState;
+
+    use crate::board::Move;
 
     use super::Agent;
 
@@ -16,9 +18,9 @@ mod random_agent
 
     impl Agent for RandomAgent
     {
-        fn agent_move_request(&mut self, board: &Board) -> Move {
-            let moving_color = board.active_color();
-            let moves = board.generate_moves_for_side(moving_color);
+        fn agent_move_request(&mut self, game_state: &GameState) -> Move {
+            let moving_color = game_state.current_board().active_color();
+            let moves = game_state.current_board().generate_moves_for_side(moving_color);
             let move_index: usize = rand::random_range(0..moves.len());
             return moves[move_index]
         }
