@@ -3,12 +3,13 @@
 use std::str::FromStr;
 
 use regex::Regex;
+use serde::{Deserialize, Serialize};
 
 use crate::{parse::{alphabetic_file_to_numeric, rank_to_numeric, NotationParseError}, UInt};
 
 /// Represents a space on the board, specified by its coordinates in both
 /// rank and file.
-#[derive(Debug, PartialEq, Eq, Hash, Copy, Clone)]
+#[derive(Debug, PartialEq, Eq, Hash, Copy, Clone, Serialize, Deserialize)]
 pub struct Square {
     /// The rank of the square, from 0-7 corresponding to ranks 1-8.
     pub rank: UInt,

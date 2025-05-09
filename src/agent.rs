@@ -4,10 +4,9 @@
 use crate::board::{Board, Move};
 
 mod local_agent;
-mod random_agent;
+mod network_agent;
 
 pub use local_agent::LocalAgent;
-pub use random_agent::RandomAgent;
 
 /// This trait defines an agent, which takes a `&mut self` and
 /// an &[Board] and returns the [Move] that it has selected so the game can progress.

@@ -1,11 +1,12 @@
 use getset::CopyGetters;
+use serde::{Deserialize, Serialize};
 
 use crate::parse::MoveCommandData;
 
 use super::Square;
 
 /// The direction the player is castling.
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, Serialize, Deserialize)]
 pub enum CastlingDirection
 {
     /// Castling kingside (i.e castling "short" or "O-O" notation)
@@ -34,7 +35,7 @@ pub enum CastlingDirection
 /// But doesn't check things like:
 /// - Occupancy in line of sight
 /// - Whether the king is in check
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, Serialize, Deserialize)]
 pub enum Move
 {
     /// Basically any move that is not a castle.
@@ -46,7 +47,7 @@ pub enum Move
 }
 
 /// Contains information about the move relevant to the [crate::board::Board]
-#[derive(Debug, CopyGetters, Copy, Clone)]
+#[derive(Debug, CopyGetters, Copy, Clone, Serialize, Deserialize)]
 #[getset(get_copy="pub")]
 pub struct MoveData
 {
