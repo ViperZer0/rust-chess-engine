@@ -5,6 +5,8 @@ use crate::board::{Board, Move};
 
 use super::Agent;
 
+/// A [RandomAgent] is an [Agent] that selects moves at random.
+/// Essentially the worst possible algorithm for a chess AI.
 pub struct RandomAgent;
 
 impl Agent for RandomAgent

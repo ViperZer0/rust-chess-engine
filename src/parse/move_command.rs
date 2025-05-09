@@ -1,7 +1,7 @@
 //! Specifies the [MoveCommand] type.
 
 use std::str::FromStr;
-use getset::{CopyGetters, Getters};
+use getset::CopyGetters;
 use regex::RegexBuilder;
 
 use crate::board::{Line, PieceType, Square};

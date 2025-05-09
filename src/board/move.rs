@@ -8,7 +8,9 @@ use super::Square;
 #[derive(Debug, Copy, Clone)]
 pub enum CastlingDirection
 {
+    /// Castling kingside (i.e castling "short" or "O-O" notation)
     Kingside,
+    /// Castling queenside (i.e castling "long" or "O-O-O" notation)
     Queenside
 }
 

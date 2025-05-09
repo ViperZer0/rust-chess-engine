@@ -8,6 +8,8 @@ use crate::{board::{Board, Move}, parse::MoveCommand};
 
 use super::Agent;
 
+/// A [LocalAgent] is an [Agent] that makes moves based on 
+/// user input provided via stdin.
 pub struct LocalAgent;
 
 impl Agent for LocalAgent

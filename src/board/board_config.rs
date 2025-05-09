@@ -20,17 +20,23 @@ use super::{Move, Piece, PieceType, PlayerColor, Square};
 #[derive(Debug, PartialEq, Getters, CopyGetters)]
 pub struct BoardConfiguration
 {
-    // I'm not sure if a vec or a hashmap is better here.
+    /// Gets the piece "mailbox", the hashmap of squares to what pieces are on them.
     #[getset(get="pub")]
+    // I'm not sure if a vec or a hashmap is better here.
     pieces: HashMap<Square, Piece>,
+    /// The active/waiting/moving [PlayerColor]
     #[getset(get_copy="pub")]
     active_color: PlayerColor,
+    /// Gets the [CastlingAvailability] of which directions are still legal to castle in.
     #[getset(get_copy="pub")]
     castling_availability: CastlingAvailability,
+    /// If this is [Some], this is the [Square] that a pawn can capture en passant
     #[getset(get_copy="pub")]
     en_passant_target_square: Option<Square>,
+    /// Gets the number of moves since the last capture or pawn push.
     #[getset(get_copy="pub")]
     halfmove_clock: u8,
+    /// Gets the total number of turns.
     #[getset(get_copy="pub")]
     fullmove_number: u8,
 }
@@ -51,12 +57,16 @@ pub struct BoardConfiguration
 #[derive(Debug, PartialEq, Clone, Copy, Getters)]
 pub struct CastlingAvailability
 {
+    /// Returns true if white is allowed to castle kingside.
     #[getset(get="pub")]
     white_castle_kingside: bool,
+    /// Returns true if white is allowed to castle queenside.
     #[getset(get="pub")]
     white_castle_queenside: bool,
+    /// Returns true if black is allowed to castle kingside.
     #[getset(get="pub")]
     black_castle_kingside: bool,
+    /// Returns true if black is allowed to castle queenside.
     #[getset(get="pub")]
     black_castle_queenside: bool,
 }
@@ -603,7 +613,7 @@ impl BoardConfigurationBuilder
     pub fn add_piece(mut self, piece: Piece, square: Square) -> Self
     {
         // Construct new hashmap if one doesn't exist yet.
-        let mut hashmap = self.pieces.get_or_insert_with(|| HashMap::new());
+        let hashmap = self.pieces.get_or_insert_with(|| HashMap::new());
         // Add the new piece
         hashmap.insert(square, piece);
         self

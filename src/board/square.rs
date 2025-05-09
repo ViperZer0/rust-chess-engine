@@ -10,7 +10,9 @@ use crate::{parse::{alphabetic_file_to_numeric, rank_to_numeric, NotationParseEr
 /// rank and file.
 #[derive(Debug, PartialEq, Eq, Hash, Copy, Clone)]
 pub struct Square {
+    /// The rank of the square, from 0-7 corresponding to ranks 1-8.
     pub rank: UInt,
+    /// The file of the square from 0-7 corresponding to files a-h.
     pub file: UInt,
 }
 
