@@ -7,9 +7,9 @@ mod random_agent
 
     use rust_chess_engine::game::GameState;
 
-    use crate::board::Move;
+    use rust_chess_engine::board::Move;
 
-    use super::Agent;
+    use rust_chess_engine::agent::Agent;
 
     /// A [RandomAgent] is an [Agent] that selects moves at random.
     /// Essentially the worst possible algorithm for a chess AI.
@@ -28,7 +28,7 @@ mod random_agent
 }
 
 use random_agent::RandomAgent;
-use rust_chess_engine::agent::LocalAgent;
+use rust_chess_engine::{agent::LocalAgent, game::Game};
 
 fn main()
 {

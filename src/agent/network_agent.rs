@@ -26,6 +26,8 @@ use super::{Agent, LocalAgent};
 /// # Examples
 ///
 /// ```no_run
+/// # use rust_chess_engine::game::Game;
+/// # use rust_chess_engine::agent::host;
 /// // Blocks until a client connects
 /// let (agent_1, agent_2) = host("127.0.0.1:8080");
 /// // Start the game with the host and client as white and black respectively.
@@ -51,12 +53,16 @@ pub fn host<A: ToSocketAddrs>(addr: A) -> (LocalNetworkAgent, RemoteNetworkAgent
 /// If a game on one client is started with 
 ///
 /// ```no_run
+/// # use rust_chess_engine::game::Game;
+/// # use rust_chess_engine::agent::host;
 /// let (local_agent, remote_agent) = host("127.0.0.1:8080");
 /// let mut game = Game::new(local_agent, remote_agent);
 /// ```
 ///
 /// The game on the other client should be started with
 /// ```no_run
+/// # use rust_chess_engine::game::Game;
+/// # use rust_chess_engine::agent::connect;
 /// let (remote_agent, local_agent) = connect("127.0.0.1:8080");
 /// let mut game = Game::new(remote_agent, local_agent);
 /// ```
@@ -77,6 +83,9 @@ pub fn host<A: ToSocketAddrs>(addr: A) -> (LocalNetworkAgent, RemoteNetworkAgent
 /// # Examples
 ///
 /// ```no_run
+///
+/// # use rust_chess_engine::game::Game;
+/// # use rust_chess_engine::agent::connect;
 /// let (agent_1, agent_2) = connect("127.0.0.1:8080");
 /// let mut game = Game::new(agent_1, agent_2);
 /// game.run();
