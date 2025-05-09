@@ -176,6 +176,44 @@ impl Board
         ).collect()
     }
 
+    /// Like [Self::squares_of_type_that_can_capture_square] but does not exclude pawns that
+    /// do not have anything to capture. This is useful for knowing what squares pawns exert
+    /// control on, even if there is no piece there to capture.
+    ///
+    /// # Arguments
+    ///
+    /// * `piece_color` - The color of the piece
+    /// * `piece_type` - The type of the piece
+    /// * `target_square` - The target square.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// ```
+    fn squares_of_type_that_can_theoretically_capture_square(&self, piece_color: PlayerColor, piece_type: PieceType, target_square: Square) -> Vec<Square>
+    {
+        let piece_map = self.pieces_of_type(piece_type) & self.pieces_of_color(piece_color);
+        let target_square_bitboard: Bitboard = target_square.into();
+
+        // We pick one of the move types depending on what type of piece this is.
+        let move_type: fn(&Board, PlayerColor, Square) -> Bitboard = match piece_type
+        {
+            PieceType::Pawn => Self::pawn_theoretical_attacks,
+            PieceType::Knight => Self::knight_moves,
+            PieceType::Bishop => Self::bishop_moves,
+            PieceType::Rook => Self::rook_moves,
+            PieceType::Queen => Self::queen_moves,
+            PieceType::King => Self::king_moves
+        };
+        // Then we filter the moves down to only those pieces which can REACH the target square.
+        // This could be no pieces, one piece (correct), or two pieces (needs to be filtered down
+        // by discriminant.
+
+        piece_map.squares().filter(
+            |start_square| !((move_type(&self, piece_color, *start_square) & target_square_bitboard).is_empty())
+        ).collect()
+    }
+
     /// Similar to [Self::squares_of_type_that_can_capture_square] but instead of returning pieces
     /// of a specific type this returns *all* pieces. 
     ///
@@ -205,6 +243,16 @@ impl Board
         // Check every single attacking piece type to see if it can attack the target square lmao.
         PIECE_TYPES.iter().map(
             |piece_type| self.squares_of_type_that_can_capture_square(attacking_color, *piece_type, target_square)
+        ).collect::<Vec<Vec<Square>>>().concat()
+    }
+
+    /// Like [Self::all_squares_that_can_capture_square_theoretical] but includes
+    /// [Self::pawn_theoretical_attacks], so does not exclude squares that pawns can't capture on
+    /// but still exert control over.
+    pub fn all_squares_that_can_capture_square_theoretical(&self, attacking_color: PlayerColor, target_square: Square) -> Vec<Square>
+    {
+        PIECE_TYPES.iter().map(
+            |piece_type| self.squares_of_type_that_can_theoretically_capture_square(attacking_color, *piece_type, target_square)
         ).collect::<Vec<Vec<Square>>>().concat()
     }
 }
@@ -286,4 +334,12 @@ mod tests
         assert!(pawn_attack_squares.contains(&Square::new(1, 0)));
     }
 
+    fn check_number_of_squares_that_can_reach_center()
+    {
+        let board = Board::new_board_with_configuration(&BoardConfiguration::from_str("r1bqkbnr/pppppppp/2n5/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1").unwrap());
+        assert_eq!(1, board.all_squares_that_can_capture_square_theoretical(PlayerColor::White, Square::new(4, 3)).len());
+        assert_eq!(0, board.all_squares_that_can_capture_square_theoretical(PlayerColor::White, Square::new(3, 4)).len());
+        assert_eq!(1, board.all_squares_that_can_capture_square_theoretical(PlayerColor::Black, Square::new(4, 4)).len());
+        assert_eq!(1, board.all_squares_that_can_capture_square_theoretical(PlayerColor::White, Square::new(3, 3)).len());
+    }
 }

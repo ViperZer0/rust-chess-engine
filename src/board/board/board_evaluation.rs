@@ -3,7 +3,7 @@
 use std::cmp::Ordering;
 use derive_more::From;
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
-use crate::board::{BoardResult, PieceType, PlayerColor};
+use crate::board::{BoardResult, PieceType, PlayerColor, Square};
 use super::Board;
 
 /// How highly to evaluate certain aspects of the position.
@@ -15,6 +15,9 @@ pub struct EvaluationWeights
     bishop_material_weight: f64,
     knight_material_weight: f64,
     pawn_material_weight: f64,
+
+    center_control_weight: f64,
+    mobility_weight: f64,
 }
 
 impl Default for EvaluationWeights
@@ -29,6 +32,8 @@ impl Default for EvaluationWeights
             bishop_material_weight: 3.0,
             knight_material_weight: 3.0,
             pawn_material_weight: 1.0,
+            center_control_weight: 0.4,
+            mobility_weight: 0.4,
         }
     }
 }
@@ -73,9 +78,10 @@ impl From<isize> for Evaluation
     /// # Examples
     ///
     /// ```
-    /// let evaluation = Evaluation::From(2_isize);
+    /// # use rust_chess_engine::board::Evaluation;
+    /// let evaluation = Evaluation::from(2_isize);
     /// assert_eq!(Evaluation::WhiteCheckmateIn(2_usize), evaluation);
-    /// let evaluation: Evaluation = -10_isize.into();
+    /// let evaluation: Evaluation = (-10_isize).into();
     /// assert_eq!(Evaluation::BlackCheckmateIn(10_usize), evaluation);
     /// let evaluation: Evaluation = 0_isize.into();
     /// assert_eq!(Evaluation::Draw, evaluation);
@@ -208,7 +214,9 @@ impl Board
     fn evaluate_approximate(&self, evaluation_weights: &EvaluationWeights) -> f64
     {
         let material_score = self.evaluate_material_score(evaluation_weights);
-        return material_score * evaluation_weights.overall_material_weight;
+        let center_control_score = self.evaluate_center_control(evaluation_weights);
+        let mobility_score = self.evaluate_material_score(evaluation_weights);
+        return material_score + center_control_score + mobility_score;
     }
 
     // Compares the amount of material each side has and returns the total weighted difference.
@@ -239,13 +247,38 @@ impl Board
         let black_piece_count = self.query().color(PlayerColor::Black).piece_type(PieceType::Pawn).result().squares().count() as isize;
         let pawn_score = (white_piece_count - black_piece_count) as f64 * evaluation_weights.pawn_material_weight;
 
-        return queen_score + rook_score + bishop_score + knight_score + pawn_score;
+        return (queen_score + rook_score + bishop_score + knight_score + pawn_score) * evaluation_weights.overall_material_weight;
+    }
+
+    fn evaluate_center_control(&self, evaluation_weights: &EvaluationWeights) -> f64
+    {
+        let square_1_count = self.all_squares_that_can_capture_square_theoretical(PlayerColor::White, Square::new(3, 3)).len() as isize -
+                             self.all_squares_that_can_capture_square_theoretical(PlayerColor::Black, Square::new(3, 3)).len() as isize;
+        let square_2_count = self.all_squares_that_can_capture_square_theoretical(PlayerColor::White, Square::new(3, 4)).len() as isize -
+                             self.all_squares_that_can_capture_square_theoretical(PlayerColor::Black, Square::new(3, 4)).len() as isize;
+        let square_3_count = self.all_squares_that_can_capture_square_theoretical(PlayerColor::White, Square::new(4, 4)).len() as isize -
+                             self.all_squares_that_can_capture_square_theoretical(PlayerColor::Black, Square::new(4, 4)).len() as isize;
+        let square_4_count = self.all_squares_that_can_capture_square_theoretical(PlayerColor::White, Square::new(4, 3)).len() as isize -
+                             self.all_squares_that_can_capture_square_theoretical(PlayerColor::Black, Square::new(4, 3)).len() as isize;
+
+        return (square_1_count + square_2_count + square_3_count + square_4_count) as f64 * evaluation_weights.center_control_weight;
+    }
+
+    fn evaluate_mobility(&self, evaluation_weights: &EvaluationWeights) -> f64
+    {
+        let white_moves = self.generate_moves_for_side(PlayerColor::White).len() as isize;
+        let black_moves = self.generate_moves_for_side(PlayerColor::Black).len() as isize;
+        return (white_moves - black_moves) as f64 * evaluation_weights.mobility_weight;
     }
 }
 
 #[cfg(test)]
 mod tests
 {
+    use std::str::FromStr;
+
+    use crate::board::BoardConfiguration;
+
     use super::*;
 
     #[test]
@@ -293,5 +326,18 @@ mod tests
         // Higher score is better than a draw for white
         assert!(Evaluation::Score(1.0) > Evaluation::Draw);
         assert!(Evaluation::Score(-1.0) < Evaluation::Draw);
+    }
+
+    #[test]
+    fn evaluate_center_control()
+    {
+        let board = Board::new_board_with_configuration(&BoardConfiguration::from_str("r1bqkbnr/pppppppp/2n5/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1").unwrap());
+        let evaluation_weights = EvaluationWeights {
+            center_control_weight: 1.0,
+            ..Default::default()
+        };
+
+        // It should be 1 white squares and 2 black squares
+        assert_eq!(-1.0, board.evaluate_center_control(&evaluation_weights));
     }
 }

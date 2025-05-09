@@ -3,7 +3,7 @@
 
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 
-use crate::{board::{Board, Evaluation, EvaluationWeights, Move, PlayerColor}, game::GameState};
+use crate::{board::{Evaluation, EvaluationWeights, Move, PlayerColor}, game::GameState};
 
 use super::Agent;
 
@@ -19,14 +19,17 @@ impl Agent for MinmaxAgent {
     fn agent_move_request(&mut self, game_state: &GameState) -> Move {
         let agent_color = game_state.current_board().active_color();
         let moves = game_state.current_board().generate_moves_for_side(agent_color);
-        *(moves.par_iter().map(|r#move| (r#move, self.evaluate_next_move(game_state, r#move)))
+        let best_move = 
+        moves.par_iter().map(|r#move| (r#move, self.evaluate_next_move(game_state, r#move)))
         .reduce_with(|a, b|
             match is_new_score_better_than_old_score(agent_color, a.1, b.1)
             {
                 true => b,
                 false => a,
             }
-        ).expect("No moves generated!").0)
+        ).expect("No moves generated!");
+        println!("Best move score: {:?}", best_move.1);
+        *(best_move.0)
     }
 }
 
@@ -41,6 +44,7 @@ impl MinmaxAgent
     /// # Examples
     ///
     /// ```
+    /// # use rust_chess_engine::agent::MinmaxAgent;
     /// let minmax_agent = MinmaxAgent::new(2);
     /// ```
     pub fn new(evaluation_depth: usize) -> Self
