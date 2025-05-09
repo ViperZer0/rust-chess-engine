@@ -13,6 +13,8 @@ mod board_move_generation;
 mod board_evaluation;
 mod mut_get_bitboards;
 
+pub use board_evaluation::{Evaluation, EvaluationWeights};
+
 /// A given board state.
 ///
 /// This represents a certain arrangement of pieces on a 8x8 chessboard. Standard stuff.

@@ -75,7 +75,7 @@ pub use square::Square;
 pub use piece_type::PieceType;
 pub use r#move::MoveData;
 pub use r#move::{Move, CastlingDirection};
-pub use board::Board;
+pub use board::{Board, EvaluationWeights, Evaluation};
 pub use player_color::PlayerColor;
 pub use piece::Piece;
 pub use board_config::{BoardConfiguration, CastlingAvailability, BoardConfigurationBuilder, InvalidFENError};

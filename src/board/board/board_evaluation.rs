@@ -1,13 +1,11 @@
 //! This sub module implements position evaluation and analysis for [Board]s.
 
 use std::cmp::Ordering;
-
-use derive_more::{From, Into};
-
+use derive_more::From;
 use crate::board::{BoardResult, PieceType, PlayerColor};
-
 use super::Board;
 
+/// How highly to evaluate certain aspects of the position.
 pub struct EvaluationWeights
 {
     overall_material_weight: f64,
@@ -18,8 +16,25 @@ pub struct EvaluationWeights
     pawn_material_weight: f64,
 }
 
+impl Default for EvaluationWeights
+{
+    fn default() -> Self
+    {
+        Self
+        {
+            overall_material_weight: 1.0,
+            queen_material_weight: 9.0,
+            rook_material_weight: 5.0,
+            bishop_material_weight: 3.0,
+            knight_material_weight: 3.0,
+            pawn_material_weight: 1.0,
+        }
+    }
+}
+
+
 /// The evaluated score of a given position.
-#[derive(From, Copy, Clone)]
+#[derive(From, Copy, Clone, Debug)]
 pub enum Evaluation
 {
     /// This position is over, white has won.
@@ -93,7 +108,6 @@ impl PartialOrd for Evaluation
 impl Ord for Evaluation
 {
     fn cmp(&self, other: &Self) -> Ordering {
-        println!("A!");
         match (self, other)
         {
             (Self::WhiteWin, Self::WhiteWin) => Ordering::Equal,
@@ -151,11 +165,19 @@ impl Board
             BoardResult::InProgress => {
                 // Once we reach a depth of 0, just approximate the position and return the score
                 if depth == 0 {
-                    return self.evaluate_approximate(evaluation_weights).into();
+                    let score: f64 = self.evaluate_approximate(evaluation_weights);
+                    return score.into();
                 }
 
                 // Recurse through all possible future positions... to a point...
-                let mut score = Evaluation::Score(0.0);
+                // We start by either maximizing or minimizing the score based on which side we're
+                // playing
+                let mut score = match self.active_color()
+                {
+                    // If we're trying to maximize the score assume the score is the worst possible
+                    PlayerColor::White => Evaluation::BlackWin,
+                    PlayerColor::Black => Evaluation::WhiteWin,
+                };
                 for r#move in self.generate_moves_for_side(self.active_color())
                 {
                     let future_board = self.make_move(&r#move);
@@ -205,28 +227,28 @@ impl Board
     fn evaluate_material_score(&self, evaluation_weights: &EvaluationWeights) -> f64
     {
         // Evalute differences in the number of queens
-        let white_piece_count = self.query().color(PlayerColor::White).piece_type(PieceType::Queen).result().squares().count();
-        let black_piece_count = self.query().color(PlayerColor::Black).piece_type(PieceType::Queen).result().squares().count();
+        let white_piece_count = self.query().color(PlayerColor::White).piece_type(PieceType::Queen).result().squares().count() as isize;
+        let black_piece_count = self.query().color(PlayerColor::Black).piece_type(PieceType::Queen).result().squares().count() as isize;
         let queen_score = (white_piece_count - black_piece_count) as f64 * evaluation_weights.queen_material_weight;
 
         // Evaluate differences in the number of rooks
-        let white_piece_count = self.query().color(PlayerColor::White).piece_type(PieceType::Rook).result().squares().count();
-        let black_piece_count = self.query().color(PlayerColor::Black).piece_type(PieceType::Rook).result().squares().count();
+        let white_piece_count = self.query().color(PlayerColor::White).piece_type(PieceType::Rook).result().squares().count() as isize;
+        let black_piece_count = self.query().color(PlayerColor::Black).piece_type(PieceType::Rook).result().squares().count() as isize;
         let rook_score = (white_piece_count - black_piece_count) as f64 * evaluation_weights.rook_material_weight;
 
         // Evaluate differences in the number of bishops
-        let white_piece_count = self.query().color(PlayerColor::White).piece_type(PieceType::Bishop).result().squares().count();
-        let black_piece_count = self.query().color(PlayerColor::Black).piece_type(PieceType::Bishop).result().squares().count();
+        let white_piece_count = self.query().color(PlayerColor::White).piece_type(PieceType::Bishop).result().squares().count() as isize;
+        let black_piece_count = self.query().color(PlayerColor::Black).piece_type(PieceType::Bishop).result().squares().count() as isize;
         let bishop_score = (white_piece_count - black_piece_count) as f64 * evaluation_weights.bishop_material_weight;
 
         // Evaluate differences in the number of knights
-        let white_piece_count = self.query().color(PlayerColor::White).piece_type(PieceType::Knight).result().squares().count();
-        let black_piece_count = self.query().color(PlayerColor::Black).piece_type(PieceType::Knight).result().squares().count();
+        let white_piece_count = self.query().color(PlayerColor::White).piece_type(PieceType::Knight).result().squares().count() as isize;
+        let black_piece_count = self.query().color(PlayerColor::Black).piece_type(PieceType::Knight).result().squares().count() as isize;
         let knight_score = (white_piece_count - black_piece_count) as f64 * evaluation_weights.knight_material_weight;
 
         // Evaluate differences in the number of pawns
-        let white_piece_count = self.query().color(PlayerColor::White).piece_type(PieceType::Pawn).result().squares().count();
-        let black_piece_count = self.query().color(PlayerColor::Black).piece_type(PieceType::Pawn).result().squares().count();
+        let white_piece_count = self.query().color(PlayerColor::White).piece_type(PieceType::Pawn).result().squares().count() as isize;
+        let black_piece_count = self.query().color(PlayerColor::Black).piece_type(PieceType::Pawn).result().squares().count() as isize;
         let pawn_score = (white_piece_count - black_piece_count) as f64 * evaluation_weights.pawn_material_weight;
 
         return queen_score + rook_score + bishop_score + knight_score + pawn_score;
