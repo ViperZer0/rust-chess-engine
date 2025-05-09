@@ -269,13 +269,6 @@ impl Board {
     /// ```
     pub fn pawn_moves(&self, active_color: PlayerColor, from: Square) -> Bitboard
     {
-        let can_move_two = match (active_color, from.rank)
-        {
-            (PlayerColor::White, 1) => Bitboard::new(u64::MAX),
-            (PlayerColor::Black, 6) => Bitboard::new(u64::MAX),
-            _ => Bitboard::new(0),
-        };
-
         let result = match (active_color, from.rank)
         {
             // Pawn on the last or first rank can't actually move at all. But I actually don't know
@@ -283,14 +276,20 @@ impl Board {
             (PlayerColor::White, 7) => Bitboard::new(0),
             (PlayerColor::Black, 0) => Bitboard::new(0),
             // Move to the square one rank in front of the current square
-            (PlayerColor::White, _) => Bitboard::from(from) << 8
-                // We can also move to the square two ranks in front of the current square if
-                // `can_move_two` is enabled.
-                | (Bitboard::from(from) << 16 & can_move_two),
+            // We consider occupancy here bc if we can't move one space we also can't move two
+            // spaces.
+            (PlayerColor::White, _) => Bitboard::from(from) << 8,
             (PlayerColor::Black, _) => Bitboard::from(from) >> 8
-                | (Bitboard::from(from) >> 16 & can_move_two),
         };
-
+        // If the square we want to move to is occupied, we can't move at all
+        let result = result & !self.query().result();
+        // Now we can try to enable moving two ranks at a time if this is the first move
+        let result = match (active_color, from.rank)
+        {
+            (PlayerColor::White, 1) => result | (result << 8),
+            (PlayerColor::Black, 6) => result | (result >> 8),
+            _ => result,
+        };
         // We exclude ANY pieces, black or white, 
         // that are in our way, bc pawns can't capture in front of themselves.
         result & !self.query().result()
@@ -326,7 +325,20 @@ impl Board {
         let down_right = Bitboard::from(from) >> 7;
         let down_left = Bitboard::from(from) >> 9;
 
-        self.query().color(!active_color).result() & match active_color
+        self.query().color(!active_color).result() & self.pawn_theoretical_attacks(active_color, from)
+    }
+
+    /// Like [Self::pawn_attacks] but does not mask out unoccupied squares.
+    /// This is useful for evaluating a position where we want to know if the pawns control certain
+    /// squares, even if there's no piece there.
+    pub fn pawn_theoretical_attacks(&self, active_color: PlayerColor, from: Square) -> Bitboard
+    {
+        let up_right = Bitboard::from(from) << 9;
+        let up_left = Bitboard::from(from) << 7;
+        let down_right = Bitboard::from(from) >> 7;
+        let down_left = Bitboard::from(from) >> 9;
+
+        match active_color
         {
             PlayerColor::White => up_right & !Bitboard::file_mask(0) |
                                   up_left & !Bitboard::file_mask(7),
@@ -891,5 +903,14 @@ mod tests
         let queen_moves: HashSet<Square> = queen_move_mask.squares().collect();
         assert_eq!(queen_moves.len(), AVAILABLE_QUEEN_MOVES);
         assert_eq!(queen_move_mask, Bitboard::new(0x1CF7_1422_4180_0000));
+    }
+
+    #[test]
+    fn pawn_cant_move_through_piece()
+    {
+        let board = Board::new_board_with_configuration(&BoardConfiguration::from_str("rnbqkbnr/pppppppp/8/8/8/2N5/PPPPPPPP/R1BQKBNR w KQkq - 0 1").unwrap());
+        let pawn_move_mask = board.pawn_moves(PlayerColor::White, Square::new(1,2));
+        // Pawn should NOT be able to move two spaces through the knight.
+        assert_eq!(0, pawn_move_mask.squares().count());
     }
 }
