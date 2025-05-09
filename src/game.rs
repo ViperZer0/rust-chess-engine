@@ -1,6 +1,6 @@
 //! This module implements the main game loop
 
-use crate::{agent::Agent, board::Board};
+use crate::{agent::Agent, board::{Board, Move}};
 
 /// A game of chess!!!
 pub struct Game<A1, A2>

@@ -2,21 +2,32 @@
 //! which allow two players to play over a network. Each player locally has a [LocalNetworkAgent]
 //! and the other player is treated as a [RemoteNetworkAgent], waiting for moves to come in.
 
-use std::{io::Write, net::TcpStream};
+use std::{io::{Read, Write}, net::{TcpListener, TcpStream, ToSocketAddrs}};
 
 use crate::board::{Board, Move};
 
 use super::{Agent, LocalAgent};
 
-/// Creates two paired [Agent]s. 
-/// 
-/// `A1` and `A2` will be either a [LocalNetworkAgent] and a [RemoteNetworkAgent]
-/// or a [RemoteNetworkAgent] and a [LocalNetworkAgent] respectively, depending on which client is
-/// playing as White and which one is playing as Black.
-pub fn create_connected_agents<A1, A2>() -> (A1, A2)
-where A1: Agent, A2: Agent
+pub fn host<A: ToSocketAddrs>(addr: A) -> (LocalNetworkAgent, RemoteNetworkAgent)
 {
-    todo!()
+    let listener = TcpListener::bind(addr).unwrap();
+    match listener.accept()
+    {
+        Ok((socket, _)) => (LocalNetworkAgent::new(socket.try_clone().expect("Cloning stream failed")), RemoteNetworkAgent::new(socket.try_clone().expect("Cloning stream failed!"))),
+        Err(_) => panic!("Couldn't accept connection :c"),
+    }
+}
+
+pub fn connect<A: ToSocketAddrs>(addr: A) -> (RemoteNetworkAgent, LocalNetworkAgent)
+{
+    if let Ok(stream) = TcpStream::connect(addr)
+    {
+        (RemoteNetworkAgent::new(stream.try_clone().expect("Cloning stream failed")), LocalNetworkAgent::new(stream.try_clone().expect("Cloning stream failed")))
+    }
+    else
+    {
+        panic!("Unable to connect :c");
+    }
 }
 
 /// A [LocalNetworkAgent] is an [Agent](super::Agent) that functions exactly
@@ -61,7 +72,7 @@ impl Agent for LocalNetworkAgent
                 Ok(_) =>
                 {
                     // Return the move we made and also send it to the RemoteNetworkAgent.
-                    self.stream.write(r#move);
+                    postcard::to_io(&r#move, &self.stream).expect("Unable to write move to stream!");
                     return r#move;
                 }
             }
@@ -72,4 +83,29 @@ impl Agent for LocalNetworkAgent
 /// A [RemoteNetworkAgent] is an [Agent](super::Agent) that listens for [Move](crate::board::Move)s
 /// made from a paired [LocalNetworkAgent], keeping two instances of a [Game](crate::game::Game) in
 /// sync on two different machines by copying the moves made.
-pub struct RemoteNetworkAgent;
+pub struct RemoteNetworkAgent
+{
+    stream: TcpStream,
+}
+
+impl RemoteNetworkAgent
+{
+    fn new(stream: TcpStream) -> Self
+    {
+        Self
+        {
+            stream
+        }
+    }
+}
+
+impl Agent for RemoteNetworkAgent
+{
+    fn agent_move_request(&mut self, board: &Board) -> Move {
+        println!("{}", board);
+        println!("Waiting for player's move...");
+        let mut buffer: Vec<u8> = Vec::new();
+        let r#move: Move = postcard::from_io((&self.stream, &mut buffer)).expect("Couldn't read move from stream!").0;
+        r#move
+    }
+}
