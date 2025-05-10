@@ -2,8 +2,8 @@
 
 use std::cmp::Ordering;
 use derive_more::From;
-use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
-use crate::board::{BoardResult, PieceType, PlayerColor, Square};
+use rayon::iter::{IndexedParallelIterator, IntoParallelRefIterator, ParallelIterator};
+use crate::board::{BoardResult, Move, PieceType, PlayerColor, Square};
 use super::Board;
 
 /// How highly to evaluate certain aspects of the position.
@@ -156,13 +156,14 @@ impl Board
     /// * `evaluation_weights` - How much to weight different factors of a position. This analysis
     /// only happens after `depth` is reached, otherwise the score is based on the maximum or
     /// minimum of all possible moves
+    /// - `num_candidate_moves` - How many moves to evaluate in detail after an initial cheap analysis.
     /// * `depth` - How many moves into the future to calculate.
     ///
     /// # Examples
     ///
     /// ```
     /// ```
-    pub fn evaluate(&self, evaluation_weights: &EvaluationWeights, depth: usize) -> Evaluation
+    pub fn evaluate(&self, evaluation_weights: &EvaluationWeights, num_candidate_moves: usize, depth: usize) -> Evaluation
     {
         match self.game_result()
         {
@@ -176,11 +177,25 @@ impl Board
                     return score.into();
                 }
 
-                // Recurse through all possible future positions... to a point...
-                let score = self.generate_moves_for_side(self.active_color()).par_iter()
+                // Do an initial cheap analysis, and then look through the most promising moves
+                let mut possible_moves: Vec<(&Move, Evaluation)> = Vec::new();
+                let moves = self.generate_moves_for_side(self.active_color());
+                moves.par_iter()
+                        .map(|r#move| (r#move, self.make_move(&r#move).evaluate(evaluation_weights, usize::MAX, Ord::min(depth-1, 1))))
+                        .collect_into_vec(&mut possible_moves);
+
+                // Sort and get the best possible moves
+                possible_moves.sort_by_key(|(_, eval)| *eval);
+                // Take the best candidates
+                let candidate_moves: Vec<Move> = match self.active_color()
+                {
+                    PlayerColor::White => possible_moves.iter().rev().take(num_candidate_moves).map(|(m, _)| **m).collect(),
+                    PlayerColor::Black => possible_moves.iter().take(num_candidate_moves).map(|(m, _)| **m).collect(),
+                };
+                let score = candidate_moves.par_iter()
                         .map(|r#move| {
                             let future_board = self.make_move(&r#move);
-                            future_board.evaluate(evaluation_weights, depth - 1)
+                            future_board.evaluate(evaluation_weights, num_candidate_moves, depth - 1)
                         })
                         .reduce_with(
                             |a, b| match self.active_color()

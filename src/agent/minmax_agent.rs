@@ -12,6 +12,7 @@ use super::Agent;
 pub struct MinmaxAgent
 {
     evaluation_weights: EvaluationWeights,
+    num_candidate_moves:usize,
     evaluation_depth: usize,
 }
 
@@ -39,6 +40,7 @@ impl MinmaxAgent
     ///
     /// # Arguments
     ///
+    /// * `num_candidate_moves` - How many moves to investigate further after a first analysis.
     /// * `evaluation_depth` - How many moves in the future to evaluate
     ///
     /// # Examples
@@ -47,11 +49,12 @@ impl MinmaxAgent
     /// # use rust_chess_engine::agent::MinmaxAgent;
     /// let minmax_agent = MinmaxAgent::new(2);
     /// ```
-    pub fn new(evaluation_depth: usize) -> Self
+    pub fn new(num_candidate_moves: usize, evaluation_depth: usize) -> Self
     {
         MinmaxAgent
         {
             evaluation_weights: EvaluationWeights::default(),
+            num_candidate_moves,
             evaluation_depth,
         }
     }
@@ -63,9 +66,8 @@ impl MinmaxAgent
 
         // If we want to we can add to our evaluation with stuff like
         // "Are we moving a piece twice in a row" or whatever. Hopefully.
-        return next_move.current_board().evaluate(&self.evaluation_weights, self.evaluation_depth);
+        return next_move.current_board().evaluate(&self.evaluation_weights, self.num_candidate_moves, self.evaluation_depth);
     }
-
 }
 
 fn is_new_score_better_than_old_score(player_color: PlayerColor, old_score: Evaluation, new_score: Evaluation) -> bool
