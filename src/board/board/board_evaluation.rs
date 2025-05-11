@@ -163,69 +163,120 @@ impl Board
     ///
     /// ```
     /// ```
-    pub fn evaluate(&self, evaluation_weights: &EvaluationWeights, num_candidate_moves: usize, depth: usize) -> Evaluation
+    pub fn evaluate(&self, evaluation_weights: &EvaluationWeights, depth: usize) -> Evaluation
     {
+        // Start at negative and positive "infinity"
+        let mut alpha = Evaluation::BlackWin;
+        let mut beta = Evaluation::WhiteWin;
+        self.evaluate_recursive(evaluation_weights, &mut alpha, &mut beta, depth)
+    }
+
+    /// Recursively evaluate all possible moves up to `depth` moves in the future.
+    /// 
+    /// We use a minimax algorithm with alpha-beta pruning.
+    ///
+    /// # Arguments
+    ///
+    /// * `evaluation_weights` - The weights to use at the end of the evaluation when we use
+    /// heuristics to evaluate how good a position is.
+    /// * `alpha` - The minimum score that the maximizing player is assured of.
+    /// * `beta` - The maximum score that the minimizing player is assured of.
+    /// * `depth` - How many moves in the future to continue evaluating
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// ```
+    fn evaluate_recursive(&self, evaluation_weights: &EvaluationWeights, alpha: &mut Evaluation, beta: &mut Evaluation, depth: usize) -> Evaluation
+    {
+        // If this board is over, we don't need to use heuristics or recurse deeper.
         match self.game_result()
         {
             BoardResult::Win(PlayerColor::White) => Evaluation::WhiteWin,
             BoardResult::Win(PlayerColor::Black) => Evaluation::BlackWin,
             BoardResult::Draw(_) => Evaluation::Draw,
-            BoardResult::InProgress => {
+            BoardResult::InProgress =>
+            {
                 // Once we reach a depth of 0, just approximate the position and return the score
-                if depth == 0 {
+                if depth == 0
+                {
                     let score: f64 = self.evaluate_approximate(evaluation_weights);
                     return score.into();
                 }
 
-                // Do an initial cheap analysis, and then look through the most promising moves
-                let mut possible_moves: Vec<(&Move, Evaluation)> = Vec::new();
-                let moves = self.generate_moves_for_side(self.active_color());
-                moves.par_iter()
-                        .map(|r#move| (r#move, self.make_move(&r#move).evaluate(evaluation_weights, usize::MAX, Ord::min(depth-1, 1))))
-                        .collect_into_vec(&mut possible_moves);
-
-                // Sort and get the best possible moves
-                possible_moves.sort_by_key(|(_, eval)| *eval);
-                // Take the best candidates
-                let candidate_moves: Vec<Move> = match self.active_color()
+                let possible_moves = self.generate_moves_for_side(self.active_color());
+                match self.active_color()
                 {
-                    PlayerColor::White => possible_moves.iter().rev().take(num_candidate_moves).map(|(m, _)| **m).collect(),
-                    PlayerColor::Black => possible_moves.iter().take(num_candidate_moves).map(|(m, _)| **m).collect(),
-                };
-                let score = candidate_moves.par_iter()
-                        .map(|r#move| {
-                            let future_board = self.make_move(&r#move);
-                            future_board.evaluate(evaluation_weights, num_candidate_moves, depth - 1)
-                        })
-                        .reduce_with(
-                            |a, b| match self.active_color()
-                {
-                    PlayerColor::White => Ord::max(a,b),
-                    PlayerColor::Black => Ord::min(a,b),
-                }).expect("No moves were found!");
-
-                // Once we're done evaluating the position, see what the score is and modify it a
-                // little bit (Basically WhiteWin turns into WhiteCheckmateIn(1), etc.)
-                match score
-                {
-                    // White wins next turn, so our score for *this* board is WhiteCheckMateIn(1)
-                    Evaluation::WhiteWin => Evaluation::WhiteCheckmateIn(1),
-                    Evaluation::WhiteCheckmateIn(x) => Evaluation::WhiteCheckmateIn(x+1),
-                    // Same for black
-                    Evaluation::BlackWin => Evaluation::BlackCheckmateIn(1),
-                    Evaluation::BlackCheckmateIn(x) => Evaluation::BlackCheckmateIn(x+1),
-                    // Otherwise we just return the score. 
-                    // I'm not sure how I should deal with draws?
-                    // Should draws also have an incrementing total? DrawIn(x) turns? Idk
-                    other => other
+                    // White is trying to MAXIMIZE score.
+                    PlayerColor::White =>
+                    {
+                        let mut best_value = Evaluation::BlackWin;
+                        for r#move in possible_moves
+                        {
+                            best_value = Ord::max(best_value, self.make_move(&r#move).evaluate_recursive(evaluation_weights, alpha, beta, depth - 1));
+                            if best_value >= *beta
+                            {
+                                // No need to evaluate further, we already know this is more or
+                                // less "too good to be true" because black is assured of a lower
+                                // score.
+                                //
+                                // This is known as a beta cutoff.
+                                break;
+                            }
+                            // We update our minimum score to the greater of these two values.
+                            *alpha = Ord::max(*alpha, best_value);
+                        }
+                        return match best_value
+                        {
+                            // We update our evaluation based on going "back" a step. So if White
+                            // wins in the next board, on this board we return a score of
+                            // WhiteCheckmateIn(1), so on and so forth.
+                            Evaluation::WhiteWin => Evaluation::WhiteCheckmateIn(1),
+                            Evaluation::WhiteCheckmateIn(x) => Evaluation::WhiteCheckmateIn(x+1),
+                            Evaluation::BlackWin => Evaluation::BlackCheckmateIn(1),
+                            Evaluation::BlackCheckmateIn(x) => Evaluation::BlackCheckmateIn(x+1),
+                            Evaluation::Draw => Evaluation::Score(0.0),
+                            Evaluation::Score(x) => Evaluation::Score(x),
+                        }
+                    }
+                    // Black is trying to MINIMIZE score.
+                    PlayerColor::Black =>
+                    {
+                        let mut best_value = Evaluation::WhiteWin;
+                        for r#move in possible_moves
+                        {
+                            best_value = Ord::min(best_value, self.make_move(&r#move).evaluate_recursive(evaluation_weights, alpha, beta, depth - 1));
+                            if best_value <= *alpha
+                            {
+                                // No need to evaluate further, see above case for beta cutoff.
+                                //
+                                // This is an alpha cutoff.
+                                break;
+                            }
+                            // The maximum score that black is assured of.
+                            *beta = Ord::min(*beta, best_value);
+                        }
+                        return match best_value
+                        {
+                            // We update our evaluation based on going "back" a step. So if White
+                            // wins in the next board, on this board we return a score of
+                            // WhiteCheckmateIn(1), so on and so forth.
+                            Evaluation::WhiteWin => Evaluation::WhiteCheckmateIn(1),
+                            Evaluation::WhiteCheckmateIn(x) => Evaluation::WhiteCheckmateIn(x+1),
+                            Evaluation::BlackWin => Evaluation::BlackCheckmateIn(1),
+                            Evaluation::BlackCheckmateIn(x) => Evaluation::BlackCheckmateIn(x+1),
+                            Evaluation::Draw => Evaluation::Score(0.0),
+                            Evaluation::Score(x) => Evaluation::Score(x),
+                        }
+                    }
                 }
             }
         }
     }
 
-    // Evaluate a position without actually traversing future positions.
-    //
-    // Instead we use EvaluationWeights to approximate how "good" the position is.
+    /// Evaluate a position without actually traversing future positions.
+    ///
+    /// Instead we use EvaluationWeights to approximate how "good" the position is.
     fn evaluate_approximate(&self, evaluation_weights: &EvaluationWeights) -> f64
     {
         let material_score = self.evaluate_material_score(evaluation_weights);
