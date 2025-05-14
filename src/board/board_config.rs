@@ -54,7 +54,7 @@ pub struct BoardConfiguration
 /// Note that this doesn't include information on *temporary* scenarios in which castling are
 /// prevented. If castling would put the king in check, the option is still available to the king
 /// later.
-#[derive(Debug, PartialEq, Clone, Copy, Getters)]
+#[derive(Debug, PartialEq, Clone, Copy, Getters, Eq, Hash)]
 pub struct CastlingAvailability
 {
     /// Returns true if white is allowed to castle kingside.

@@ -1,4 +1,4 @@
-use std::{collections::HashMap, fmt::Display};
+use std::{collections::HashMap, fmt::Display, hash::Hash};
 
 use getset::CopyGetters;
 
@@ -565,6 +565,23 @@ impl PartialEq for Board
 }
 
 impl Eq for Board {}
+
+impl Hash for Board
+{
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.white_pieces.hash(state);
+        self.black_pieces.hash(state);
+        self.king_pieces.hash(state);
+        self.queen_pieces.hash(state);
+        self.rook_pieces.hash(state);
+        self.knight_pieces.hash(state);
+        self.bishop_pieces.hash(state);
+        self.pawn_pieces.hash(state);
+        self.active_color.hash(state);
+        self.castling_availability.hash(state);
+        self.en_passant_target_square.hash(state);
+    }
+}
 
 impl Display for Board
 {

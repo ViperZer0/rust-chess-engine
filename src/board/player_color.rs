@@ -1,7 +1,7 @@
 use std::ops::Not;
 
 /// The two side colors, white and black.
-#[derive(Debug, PartialEq, Copy, Clone)]
+#[derive(Debug, PartialEq, Copy, Clone, Eq, Hash)]
 pub enum PlayerColor
 {
     /// The white player color

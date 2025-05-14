@@ -189,7 +189,7 @@ impl Display for OutOfBoundsTypeError
 }
 
 /// See the [module-level documentation](./index.html) for more information on bitboards in general.
-#[derive(Debug, Clone, Copy, From, Add, Mul, Into, AddAssign, MulAssign, BitOrAssign, BitOr, BitAndAssign, BitAnd, BitXor, BitXorAssign, Default, Shl, Shr, ShlAssign, ShrAssign, PartialEq, Not)]
+#[derive(Debug, Clone, Copy, From, Add, Mul, Into, AddAssign, MulAssign, BitOrAssign, BitOr, BitAndAssign, BitAnd, BitXor, BitXorAssign, Default, Shl, Shr, ShlAssign, ShrAssign, PartialEq, Not, Eq, Hash)]
 pub struct Bitboard(u64);
 
 impl Bitboard
