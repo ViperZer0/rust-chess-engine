@@ -513,6 +513,59 @@ impl Board
     }
 }
 
+impl PartialEq for Board
+{
+    /// Equality for two `Board`s.
+    ///
+    /// Two `Board`s are considered equal if:
+    /// - The pieces on each board are in identical states
+    /// - Both boards are on the same player color's turn (i.e white to move on both boards)
+    /// - Both boards have the same *en passant* square if applicable. Both boards either do not
+    /// have an en passant square or have the same en passant square.
+    /// - Both boards have the same [CastlingAvailability].
+    ///
+    /// The `Board`s may be different in the following ways and still be considered equal:
+    /// - One `Board` may have its piece mailbox generated/cached and the other does not
+    /// - The two `Board`s have different amounts of moves made
+    /// - The two `Board`s have different moves that led to the same position.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use rust_chess_engine::parse::MoveCommand;
+    /// # use rust_chess_engine::board::Board;
+    /// # use std::str::FromStr;
+    ///
+    /// let board = Board::new_default_starting_board();
+    /// // For board 2 we move both knights off of their starting squares and then back
+    /// let board2 = Board::new_default_starting_board()
+    ///     .attempt_move_from_command(&MoveCommand::from_str("Nc3").unwrap()).unwrap()
+    ///     .attempt_move_from_command(&MoveCommand::from_str("Nf6").unwrap()).unwrap()
+    ///     .attempt_move_from_command(&MoveCommand::from_str("Nb1").unwrap()).unwrap()
+    ///     .attempt_move_from_command(&MoveCommand::from_str("Ng8").unwrap()).unwrap();
+    ///
+    /// // Board 2 has had 2 turns more than board 1, but the boards are still equal 
+    /// // because all of the pieces are in the same space.
+    /// assert_eq!(board, board2);
+    /// ```
+    fn eq(&self, other: &Self) -> bool
+    {
+        return (self.white_pieces == other.white_pieces) &&
+               (self.black_pieces == other.black_pieces) &&
+               (self.king_pieces == other.king_pieces) &&
+               (self.queen_pieces == other.queen_pieces) &&
+               (self.rook_pieces == other.rook_pieces) &&
+               (self.knight_pieces == other.knight_pieces) &&
+               (self.bishop_pieces == other.bishop_pieces) &&
+               (self.pawn_pieces == other.pawn_pieces) &&
+               (self.active_color == other.active_color) &&
+               (self.castling_availability == other.castling_availability) &&
+               (self.en_passant_target_square == other.en_passant_target_square)
+    }
+}
+
+impl Eq for Board {}
+
 impl Display for Board
 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
