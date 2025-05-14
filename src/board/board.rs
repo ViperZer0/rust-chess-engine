@@ -1,5 +1,6 @@
 use std::{collections::HashMap, fmt::Display, hash::Hash};
 
+use colored::{Color, Colorize, Style, Styles};
 use getset::CopyGetters;
 
 use crate::{bitboard::Bitboard, board::{DrawReason, PieceType, PlayerColor}, parse::MoveCommand};
@@ -14,6 +15,9 @@ mod board_evaluation;
 mod mut_get_bitboards;
 
 pub use board_evaluation::{Evaluation, EvaluationWeights};
+
+const BOARD_COLOR_1: Color = Color::Cyan;
+const BOARD_COLOR_2: Color = Color::Magenta;
 
 /// A given board state.
 ///
@@ -618,10 +622,13 @@ impl Display for Board
                 // Visit each square and print what piece is on that square, if any.
                 let square = Square::new(rank, file);
                 let piece = self.piece_mailbox.get(&square);
-                match piece
+                let is_even = (rank + file) % 2 == 0;
+                match (piece, is_even)
                 {
-                    Some(x) => write!(f, "[{}]", x)?,
-                    None => write!(f, "[ ]")?,
+                    (Some(x), false) => write!(f, "{}{}{}", "[".color(BOARD_COLOR_1), x, "]".color(BOARD_COLOR_1))?,
+                    (None, false) => write!(f, "{} {}", "[".color(BOARD_COLOR_1), "]".color(BOARD_COLOR_1))?,
+                    (Some(x), true) => write!(f, "{}{}{}", "[".color(BOARD_COLOR_2), x, "]".color(BOARD_COLOR_2))?,
+                    (None, true) => write!(f, "{} {}", "[".color(BOARD_COLOR_2), "]".color(BOARD_COLOR_2))?,
                 };
             }
             write!(f, "\n")?;
@@ -633,10 +640,12 @@ impl Display for Board
 #[cfg(test)]
 mod tests
 {
+    use crate::hashmap_diff::print_hashmap_differences;
     use std::str::FromStr;
 
-    use crate::{board::{BoardConfiguration, Piece, PieceType, PlayerColor, Square}, hashmap_diff::print_hashmap_differences, parse::MoveCommand};
+    use colored::Colorize;
 
+    use super::*;
     use super::Board;
 
     #[test]
@@ -820,16 +829,21 @@ mod tests
     #[test]
     fn display_default_starting_board_string()
     {
-        let default_board_str = 
+        let ob_red = "[".color(BOARD_COLOR_1);
+        let cb_red = "]".color(BOARD_COLOR_1);
+        let ob_green = "[".color(BOARD_COLOR_2);
+        let cb_green = "]".color(BOARD_COLOR_2);
+        let default_board_str = format!(
         "   a  b  c  d  e  f  g  h \n\
-         8 [r][n][b][q][k][b][n][r]\n\
-         7 [p][p][p][p][p][p][p][p]\n\
-         6 [ ][ ][ ][ ][ ][ ][ ][ ]\n\
-         5 [ ][ ][ ][ ][ ][ ][ ][ ]\n\
-         4 [ ][ ][ ][ ][ ][ ][ ][ ]\n\
-         3 [ ][ ][ ][ ][ ][ ][ ][ ]\n\
-         2 [P][P][P][P][P][P][P][P]\n\
-         1 [R][N][B][Q][K][B][N][R]\n";
+         8 {ob_red}r{cb_red}{ob_green}n{cb_green}{ob_red}b{cb_red}{ob_green}q{cb_green}{ob_red}k{cb_red}{ob_green}b{cb_green}{ob_red}n{cb_red}{ob_green}r{cb_green}\n\
+         7 {ob_green}p{cb_green}{ob_red}p{cb_red}{ob_green}p{cb_green}{ob_red}p{cb_red}{ob_green}p{cb_green}{ob_red}p{cb_red}{ob_green}p{cb_green}{ob_red}p{cb_red}\n\
+         6 {ob_red} {cb_red}{ob_green} {cb_green}{ob_red} {cb_red}{ob_green} {cb_green}{ob_red} {cb_red}{ob_green} {cb_green}{ob_red} {cb_red}{ob_green} {cb_green}\n\
+         5 {ob_green} {cb_green}{ob_red} {cb_red}{ob_green} {cb_green}{ob_red} {cb_red}{ob_green} {cb_green}{ob_red} {cb_red}{ob_green} {cb_green}{ob_red} {cb_red}\n\
+         4 {ob_red} {cb_red}{ob_green} {cb_green}{ob_red} {cb_red}{ob_green} {cb_green}{ob_red} {cb_red}{ob_green} {cb_green}{ob_red} {cb_red}{ob_green} {cb_green}\n\
+         3 {ob_green} {cb_green}{ob_red} {cb_red}{ob_green} {cb_green}{ob_red} {cb_red}{ob_green} {cb_green}{ob_red} {cb_red}{ob_green} {cb_green}{ob_red} {cb_red}\n\
+         2 {ob_red}P{cb_red}{ob_green}P{cb_green}{ob_red}P{cb_red}{ob_green}P{cb_green}{ob_red}P{cb_red}{ob_green}P{cb_green}{ob_red}P{cb_red}{ob_green}P{cb_green}\n\
+         1 {ob_green}R{cb_green}{ob_red}N{cb_red}{ob_green}B{cb_green}{ob_red}Q{cb_red}{ob_green}K{cb_green}{ob_red}B{cb_red}{ob_green}N{cb_green}{ob_red}R{cb_red}\n"
+        );
         let board = Board::new_default_starting_board();
 
         assert_eq!(default_board_str, format!("{}", board));
