@@ -24,3 +24,7 @@ rand = "0.9.1"
 [[bench]]
 name = "bitmask_benchmark"
 harness = false
+
+[[bench]]
+name = "ai_move_benchmark"
+harness = false

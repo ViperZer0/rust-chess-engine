@@ -93,7 +93,7 @@ where A1: Agent, A2: Agent
     ///
     /// # Examples
     ///
-    fn next_round(&mut self)
+    pub fn next_round(&mut self)
     {
         if self.game_state.current_board().game_result().is_in_progress()
         {
