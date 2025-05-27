@@ -1,7 +1,7 @@
 //! This module implements [MinmaxAgent], a CPU/AI/chess engine [Agent] that
 //! attempts to predict what the best move to make is.
 
-use std::{collections::HashMap, sync::RwLock};
+use std::{collections::HashMap, sync::{Arc, Mutex, RwLock}, thread::JoinHandle};
 
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 
@@ -15,7 +15,8 @@ pub struct MinmaxAgent
 {
     evaluation_weights: EvaluationWeights,
     evaluation_depth: usize,
-    board_memory: RwLock<HashMap<Board, Evaluation>>
+    board_memory: Arc<RwLock<HashMap<Board, BoardEvaluationContext>>>,
+    board_evaluation_thread: JoinHandle<()>
 }
 
 /// Contains information about how this board state was evaluated.
@@ -24,7 +25,9 @@ struct BoardEvaluationContext
     // How many boards past this board have been evaluated.
     depth: usize,
     // The evaluation outcome
-    evaluation: Evaluation
+    evaluation: Evaluation,
+    // The list of previous board states that can lead to this one.
+    previous_boards: Vec<Board>,
 }
 
 impl Agent for MinmaxAgent {
@@ -193,6 +196,54 @@ impl MinmaxAgent
             }
         }
     }
+
+    // Starts a new background thread to continously evaluate and expand the board memory.
+    // Returns the thread
+    fn start_evaluation_thread(start_board: Board, evaluation_weights: &EvaluationWeights, board_memory: Arc<RwLock<HashMap<Board, BoardEvaluationContext>>>) -> JoinHandle<()>
+    {
+        thread::spawn(move ||
+        {
+            let board_moves = board_memory.read().unwrap();
+            // We first want to find out what the smallest depth we've checked is, 
+            // and more or less resume our evaluation there.
+            let min_depth = board_moves.par_iter().min_by_key(|x| x.1.depth);
+            if let None = min_depth 
+            {
+                add_initial_moves(&start_board, evaluation_weights, board_memory);
+            }
+
+
+        }
+    }
+
+    fn add_initial_moves(start_board: &Board, evaluation_weights: &EvaluationWeights, board_memory: Arc<RwLock<HashMap<Board, BoardEvaluationContext>>>)
+    {
+        let new_boards = start_board.generate_moves_for_side(start_board.active_color()).par_iter()
+            .map(|r#move| start_board.attempt_move(r#move).unwrap())
+            .map(|board| (board, board.evaluate_approximate(evaluation_weights)));
+
+        new_boards.for_each(|(board, evaluation)|
+            {
+                board_memory.write().insert(
+                    board,
+                    BoardEvaluationContext
+                    {
+                        depth: 0,
+                        evaluation: evaluation,
+                        previous_boards: vec![start_board.clone()]
+                    }
+                )
+            });
+        let evaluation = new_boards.reduce_with(|a, b|
+            match is_new_score_better_than_old_score(start_board.active_color(), a.1, b.1)
+            {
+                true => b,
+                false => a,
+            }
+        ).expect("No moves generated!");
+
+        board_memory.write().unwrap().insert(start_board, evaluation);
+    }
 }
 
 fn is_new_score_better_than_old_score(player_color: PlayerColor, old_score: Evaluation, new_score: Evaluation) -> bool
@@ -203,4 +254,5 @@ fn is_new_score_better_than_old_score(player_color: PlayerColor, old_score: Eval
         PlayerColor::Black => old_score > new_score,
     }
 }
+
 
